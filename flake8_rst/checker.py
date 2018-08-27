@@ -56,7 +56,8 @@ class RstManager(Manager):
 
                         for code, indent, start in find_sourcecode(''.join(lines)):
                             checker = RstFileChecker(filename, checks, self.options,
-                                                     lines=code.split('\n'), start=start, indent=indent)
+                                                     lines=[line + '\n' for line in code.split('\n')],
+                                                     start=start, indent=indent)
                             checkers.append(checker)
         self.checkers = checkers
         assert checkers
