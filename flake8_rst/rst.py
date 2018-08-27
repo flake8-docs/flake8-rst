@@ -19,6 +19,6 @@ def find_sourcecode(src: str) -> str:
         min_indent = min(INDENT_RE.findall(match['code']))
 
         code = textwrap.dedent(match['code'])
-        line = src[:match.start()].count('\n') + match['before'].count('\n')
+        line_number = src[:match.start()].count('\n') + match['before'].count('\n')
 
-        yield f'{code.rstrip()}', len(min_indent), line
+        yield code.rstrip(), len(min_indent), line_number
