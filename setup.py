@@ -6,7 +6,7 @@ requires = [
 
 setup(
     name='flake8-rst',
-    version='0.1.2',
+    version='0.2',
     license="MIT",
     packages=find_packages(),
     url='https://github.com/kataev/flake8-rst',
