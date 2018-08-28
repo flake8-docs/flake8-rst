@@ -40,7 +40,7 @@ class RstManager(Manager):
             # If it was specified explicitly, the user intended for it to be
             # checked.
             explicitly_provided = (not running_from_vcs and not running_from_diff and (argument == filename))
-            return ((file_exists and (explicitly_provided or matches_filename_patterns)) or is_stdin)
+            return (file_exists and (explicitly_provided or matches_filename_patterns)) or is_stdin
 
         checks = self.checks.to_dictionary()
 
@@ -48,24 +48,38 @@ class RstManager(Manager):
 
         for argument in paths:
             for filename in utils.filenames_from(argument, self.is_path_excluded):
-                if should_create_file_checker(filename, argument):
-                    checker = RstFileChecker(filename, checks, self.options)
+                if not should_create_file_checker(filename, argument):
+                    continue
+                checker = RstFileChecker(filename, checks, self.options)
 
-                    if checker.should_process:
-                        lines = checker.processor.read_lines()
+                if not checker.should_process:
+                    continue
 
-                        for code, indent, line_number in find_sourcecode(''.join(lines)):
-                            checker = RstFileChecker(filename, checks, self.options,
-                                                     lines=[line + '\n' for line in code.split('\n')],
-                                                     start=line_number, indent=indent)
-                            checkers.append(checker)
+                lines = checker.processor.read_lines()
+
+                for code, indent, line_number in find_sourcecode(''.join(lines)):
+
+                    lines = []
+                    skip = 0
+                    if self.options.bootstrap:
+                        lines.append(self.options.bootstrap + '\n')
+                        skip = lines[0].count('\n')
+
+                    lines.extend(line + '\n' for line in code.split('\n'))
+
+                    checker = RstFileChecker(filename, checks, self.options,
+                                             skip=skip, lines=lines,
+                                             start=line_number - 1, indent=indent)
+
+                    checkers.append(checker)
         self.checkers = checkers
-        assert checkers
+
         LOG.info('Checking %d files', len(self.checkers))
 
 
 class RstFileChecker(FileChecker):
-    def __init__(self, filename, checks, options, lines=None, start=None, indent=0):
+    def __init__(self, filename, checks, options, skip=0, lines=None, start=None, indent=0):
+        self.skip = skip
         self.lines = lines
         self.start = start
         self.indent = indent
@@ -87,5 +101,7 @@ class RstFileChecker(FileChecker):
             return None
 
     def report(self, error_code, line_number, column, text, line=None):
-        return super(RstFileChecker, self).report(error_code, line_number + self.start,
+        if line_number <= self.skip:
+            return error_code
+        return super(RstFileChecker, self).report(error_code, line_number + self.start - self.skip + 1,
                                                   column + self.indent, text, line=line)

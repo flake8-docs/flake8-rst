@@ -13,6 +13,10 @@ class Application(Application):
         self.option_manager = manager.OptionManager(
             prog=program, version=version
         )
+        self.option_manager.add_option(
+            '--bootstrap', default=None, parse_from_config=True,
+            help='Bootstrap code snippets. Useful for add imports.',
+        )
         options.register_default_options(self.option_manager)
 
     def make_file_checker_manager(self):

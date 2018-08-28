@@ -25,11 +25,12 @@ as an argument to a :class:`~sqlalchemy.schema.Column` object
 .. sourcecode:: python
 
     user_preference = Table('user_preference', metadata,
-        Column('pref_id', Integer, primary_key=True),
-        Column('user_id', Integer, ForeignKey("user.user_id"), nullable=False),
-        Column('pref_name', String(40), nullable=False),
-        Column('pref_value', String(100))
-    )
+                            Column('pref_id', Integer, primary_key=True),
+                            Column('user_id', Integer, ForeignKey("user.user_id"),
+                                   nullable=False),
+                            Column('pref_name', String(40), nullable=False),
+                            Column('pref_value', String(100))
+                            )
 
 Above, we define a new table ``user_preference`` for which each row must
 contain a value in the ``user_id`` column that also exists in the ``user``
