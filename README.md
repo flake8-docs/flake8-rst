@@ -12,6 +12,8 @@ Realization inspired by https://github.com/asottile/blacken-docs
 
 
 ## Usage
+You can install tool from pip `pip install flake8-rst`.
+
 Tool search `sourcecode` and `code-block` blocks, crop and run flake8 on it:
 
 ```text
