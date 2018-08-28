@@ -10,6 +10,9 @@ from flake8_rst.rst import find_sourcecode
 
 class RstManager(Manager):
 
+    def _job_count(self):
+        return 0
+
     def make_checkers(self, paths=None):
         # type: (List[str]) -> NoneType
         """Create checkers for each file."""
@@ -62,7 +65,7 @@ class RstManager(Manager):
                     lines = []
                     skip = 0
                     if self.options.bootstrap:
-                        lines.append(self.options.bootstrap + '\n')
+                        lines.append(self.options.bootstrap + '\n\n')
                         skip = lines[0].count('\n')
 
                     lines.extend(line + '\n' for line in code.split('\n'))
@@ -103,5 +106,10 @@ class RstFileChecker(FileChecker):
     def report(self, error_code, line_number, column, text, line=None):
         if line_number <= self.skip:
             return error_code
-        return super(RstFileChecker, self).report(error_code, line_number + self.start - self.skip + 1,
-                                                  column + self.indent, text, line=line)
+
+        if error_code == 'E999':
+            line_number = line_number + self.start - self.skip + 1
+        else:
+            line_number = line_number + self.start
+
+        return super(RstFileChecker, self).report(error_code, line_number, column + self.indent, text, line=line)
