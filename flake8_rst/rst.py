@@ -14,7 +14,7 @@ INDENT_RE = re.compile('^ +(?=[^ ])', re.MULTILINE)
 TRAILING_NL_RE = re.compile(r'\n+\Z', re.MULTILINE)
 
 
-def find_sourcecode(src: str) -> str:
+def find_sourcecode(src):
     for match in RST_RE.finditer(src):
         min_indent = min(INDENT_RE.findall(match['code']))
 
