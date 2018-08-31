@@ -4,6 +4,10 @@ requires = [
     "flake8 >= 3.5.0",
 ]
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
+
 setup(
     name='flake8-rst',
     version='0.2',
@@ -14,6 +18,8 @@ setup(
     author_email='denis.a.kataev@gmail.com',
     install_requires=requires,
     description='flake8 for code in rst files and docstrings',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     classifiers=(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
