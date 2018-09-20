@@ -62,11 +62,12 @@ class RstManager(Manager):
 
                 for code, indent, line_number in find_sourcecode(''.join(lines)):
 
-                    lines = []
-                    skip = 0
                     if self.options.bootstrap:
-                        lines.append(self.options.bootstrap + '\n\n')
+                        lines = [self.options.bootstrap + '\n\n']
                         skip = lines[0].count('\n')
+                    else:
+                        lines = []
+                        skip = 0
 
                     lines.extend(line + '\n' for line in code.split('\n'))
 

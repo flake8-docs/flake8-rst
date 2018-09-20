@@ -1,12 +1,12 @@
 from flake8.main import options
-from flake8.main.application import Application
+from flake8.main.application import Application as Flake8Application
 from flake8.options import manager
 
 from . import __version__
 from . import checker
 
 
-class Application(Application):
+class Application(Flake8Application):
     def __init__(self, program='flake8-rst', version=__version__):
         super(Application, self).__init__(program, version)
 
