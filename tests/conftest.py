@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import ast
+import sys
 
 try:
     import pathlib
@@ -12,6 +13,7 @@ import pytest
 
 ROOT_DIR = pathlib.Path(__file__).parent
 DATA_DIR = ROOT_DIR / 'data'
+RESULT_DIR = ROOT_DIR / ('result_py%s' % (sys.version_info[0]))
 
 
 @pytest.fixture()
@@ -25,7 +27,12 @@ def read_ast(self):
 
 
 def write_ast(self, data):
-    with self.open('wb') as f:
+    if sys.version_info[0] < 3:
+        o = 'wb'
+    else:
+        o = 'w'
+
+    with self.open(o) as f:
         pprint.pprint(data, stream=f, width=120)
 
 
@@ -40,7 +47,7 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     files = {}
 
-    for f in DATA_DIR.glob('*'):
+    for f in list(DATA_DIR.glob('*')) + list(RESULT_DIR.glob('*')):
         name, number = f.stem.split('_')
         data = files.setdefault(number, [None, None])
 

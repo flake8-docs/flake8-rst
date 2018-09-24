@@ -3,7 +3,6 @@ import pytest
 
 @pytest.fixture()
 def options(mocker):
-
     return mocker.Mock(max_line_length=80, verbose=0)
 
 
@@ -16,12 +15,11 @@ def checks():
 
 @pytest.fixture()
 def checker(request, options, checks):
-    from flake8_rst.checker import RstFileChecker
     from flake8_rst.rst import find_sourcecode
+    from flake8_rst.checker import RstFileChecker
 
     with request.param.open() as f:
         for code, indent, line_number in find_sourcecode(f.read()):
-
             return RstFileChecker.from_sourcecode(
                 filename=__name__, code=code, bootstrap=False,
                 checks=checks.to_dictionary(), options=options,
