@@ -1,4 +1,4 @@
-# flake8-rst module
+# flake8-rst module [![Build Status](https://travis-ci.org/kataev/flake8-rst.svg?branch=master)](https://travis-ci.org/kataev/flake8-rst)
 Allows run flake8 on code snippets in docstrings or RST files.
 
 
