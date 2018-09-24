@@ -25,19 +25,23 @@ def find_sourcecode(src):
         except ValueError:
             min_indent = ''
 
-        indent = len(min_indent) + 1
-        code = textwrap.dedent(code)
+        indent = len(min_indent)
+        new_code = textwrap.dedent(code)
 
         if '>>>' in code:
             indent += 4
             lines = []
             for line in code.split('\n'):
+                if not line.strip():
+                    lines.append(line)
+                    continue
+
                 for anchor in ANCHORS:
                     if line.startswith(anchor):
                         lines.append(line[len(anchor):])
 
-            code = '\n'.join(lines)
+            new_code = '\n'.join(lines)
 
         line_number = src[:match.start()].count('\n') + match.group('before').count('\n')
 
-        yield code.rstrip(), indent, line_number
+        yield new_code.rstrip(), indent, line_number
