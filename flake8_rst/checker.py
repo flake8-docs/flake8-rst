@@ -61,19 +61,11 @@ class RstManager(Manager):
                 lines = checker.processor.read_lines()
 
                 for code, indent, line_number in find_sourcecode(''.join(lines)):
-
-                    if self.options.bootstrap:
-                        lines = [self.options.bootstrap + '\n\n']
-                        skip = lines[0].count('\n')
-                    else:
-                        lines = []
-                        skip = 0
-
-                    lines.extend(line + '\n' for line in code.split('\n'))
-
-                    checker = RstFileChecker(filename, checks, self.options,
-                                             skip=skip, lines=lines,
-                                             start=line_number - 1, indent=indent)
+                    checker = RstFileChecker.from_sourcecode(
+                        filename=filename, checks=checks, options=self.options,
+                        start=line_number - 1, indent=indent,
+                        code=code, bootstrap=self.options.bootstrap
+                    )
 
                     checkers.append(checker)
         self.checkers = checkers
@@ -82,12 +74,25 @@ class RstManager(Manager):
 
 
 class RstFileChecker(FileChecker):
-    def __init__(self, filename, checks, options, skip=0, lines=None, start=None, indent=0):
+    def __init__(self, filename, checks, options, skip=0, lines=None, start=0, indent=0):
         self.skip = skip
         self.lines = lines
         self.start = start
         self.indent = indent
         super(RstFileChecker, self).__init__(filename, checks, options)
+
+    @classmethod
+    def from_sourcecode(cls, *, code, bootstrap, **kwargs):
+        if bootstrap:
+            lines = [bootstrap + (os.linesep * 2)]
+            skip = lines[0].count(os.linesep)
+        else:
+            lines = []
+            skip = 0
+
+        lines.extend(line + os.linesep for line in code.split(os.linesep))
+
+        return RstFileChecker(**kwargs, lines=lines, skip=skip)
 
     def _make_processor(self):
         try:
