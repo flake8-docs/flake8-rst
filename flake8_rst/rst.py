@@ -25,8 +25,10 @@ def find_sourcecode(src):
         except ValueError:
             min_indent = ''
 
-        if '>>>' in code:
+        indent = len(min_indent)
 
+        if '>>>' in code:
+            indent += 5
             lines = []
             for line in code.split('\n'):
                 for p in PYCON:
@@ -43,4 +45,4 @@ def find_sourcecode(src):
         code = textwrap.dedent(code)
         line_number = src[:match.start()].count('\n') + match.group('before').count('\n')
 
-        yield code.rstrip(), len(min_indent), line_number
+        yield code.rstrip(), indent, line_number
