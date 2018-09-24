@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='flake8-rst',
-    version='0.3.0',
+    version='0.4.0',
     license="MIT",
     packages=find_packages(),
     url='https://github.com/kataev/flake8-rst',
@@ -22,6 +22,7 @@ setup(
     long_description_content_type="text/markdown",
     classifiers=(
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 2",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ),
