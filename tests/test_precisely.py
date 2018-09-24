@@ -38,6 +38,10 @@ def result(request):
 def test_checker(request, checker, result):
     data = checker.run_checks()
 
+    for obj in data:
+        if isinstance(obj, list):
+            obj.sort()
+
     if request.config.getoption('--refresh'):
         result.write_ast(data)
 
