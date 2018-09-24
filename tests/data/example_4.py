@@ -14,7 +14,6 @@ Example
     >>> from gensim.models import AuthorTopicModel
     >>> from gensim.corpora import mmcorpus
     >>> from gensim.test.utils import common_dictionary, datapath, temporary_file
-
     >>> author2doc = {
     ...     'john': [0, 1, 2, 3, 4, 5, 6],
     ...     'jane': [2, 3, 4, 5, 6, 7, 8],

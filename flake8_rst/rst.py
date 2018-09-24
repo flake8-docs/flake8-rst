@@ -13,7 +13,7 @@ RST_RE = re.compile(
 INDENT_RE = re.compile('^ +(?=[^ ])', re.MULTILINE)
 TRAILING_NL_RE = re.compile(r'\n+\Z', re.MULTILINE)
 
-PYCON = ('>>> ', '... ',)
+ANCHORS = ('>>> ', '... ',)
 
 
 def find_sourcecode(src):
@@ -25,24 +25,19 @@ def find_sourcecode(src):
         except ValueError:
             min_indent = ''
 
-        indent = len(min_indent)
+        indent = len(min_indent) + 1
+        code = textwrap.dedent(code)
 
         if '>>>' in code:
-            indent += 5
+            indent += 4
             lines = []
             for line in code.split('\n'):
-                for p in PYCON:
-                    if p in line or line.endswith(p.strip()):
-                        lines.append(line)
-                        break
+                for anchor in ANCHORS:
+                    if line.startswith(anchor):
+                        lines.append(line[len(anchor):])
 
             code = '\n'.join(lines)
-            code = code.replace('>>> ', '')
-            code = code.replace('>>>', '')
-            code = code.replace('... ', '')
-            code = code.replace('...', '')
 
-        code = textwrap.dedent(code)
         line_number = src[:match.start()].count('\n') + match.group('before').count('\n')
 
         yield code.rstrip(), indent, line_number

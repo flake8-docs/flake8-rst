@@ -3,7 +3,7 @@ import pytest
 
 @pytest.fixture()
 def options(mocker):
-    return mocker.Mock(max_line_length=80, verbose=0)
+    return mocker.Mock(max_line_length=80, verbose=0, hang_closing=False)
 
 
 @pytest.fixture()
