@@ -82,7 +82,7 @@ class RstFileChecker(FileChecker):
         super(RstFileChecker, self).__init__(filename, checks, options)
 
     @classmethod
-    def from_sourcecode(cls, *, code, bootstrap, **kwargs):
+    def from_sourcecode(cls, code, bootstrap, **kwargs):
         if bootstrap:
             lines = [bootstrap + (os.linesep * 2)]
             skip = lines[0].count(os.linesep)
@@ -92,7 +92,7 @@ class RstFileChecker(FileChecker):
 
         lines.extend(line + os.linesep for line in code.split(os.linesep))
 
-        return RstFileChecker(**kwargs, lines=lines, skip=skip)
+        return RstFileChecker(lines=lines, skip=skip, **kwargs)
 
     def _make_processor(self):
         try:

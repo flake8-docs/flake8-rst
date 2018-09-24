@@ -1,5 +1,11 @@
+from __future__ import unicode_literals
+
 import ast
-import pathlib
+
+try:
+    import pathlib
+except ImportError:
+    import pathlib2 as pathlib
 import pprint
 
 import pytest
@@ -19,8 +25,8 @@ def read_ast(self):
 
 
 def write_ast(self, data):
-    with self.open('w') as f:
-        pprint.pprint(data, stream=f)
+    with self.open('wb') as f:
+        pprint.pprint(data, stream=f, width=120)
 
 
 pathlib.Path.read_ast = read_ast

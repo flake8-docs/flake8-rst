@@ -2,10 +2,9 @@ import pytest
 
 
 @pytest.fixture()
-def options():
-    from unittest.mock import Mock
+def options(mocker):
 
-    return Mock(max_line_length=80, verbose=0)
+    return mocker.Mock(max_line_length=80, verbose=0)
 
 
 @pytest.fixture()

@@ -18,7 +18,7 @@ PYCON = ('>>> ', '... ',)
 
 def find_sourcecode(src):
     for match in RST_RE.finditer(src):
-        code = match['code']
+        code = match.group('code')
 
         try:
             min_indent = min(INDENT_RE.findall(code))
@@ -41,6 +41,6 @@ def find_sourcecode(src):
             code = code.replace('...', '')
 
         code = textwrap.dedent(code)
-        line_number = src[:match.start()].count('\n') + match['before'].count('\n')
+        line_number = src[:match.start()].count('\n') + match.group('before').count('\n')
 
         yield code.rstrip(), len(min_indent), line_number
