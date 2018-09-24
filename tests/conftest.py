@@ -60,6 +60,12 @@ def pytest_generate_tests(metafunc):
 
         data[i] = f
 
+    if 'source' in metafunc.fixturenames:
+        source = list(DATA_DIR.glob('*'))
+        ids = [f.name for f in source]
+
+        metafunc.parametrize('source', source, ids=ids)
+
     if 'checker' in metafunc.fixturenames and 'result' in metafunc.fixturenames:
         ids, values = zip(*files.items())
         metafunc.parametrize('checker,result', values, ids=ids, indirect=True)

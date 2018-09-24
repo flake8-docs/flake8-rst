@@ -46,3 +46,13 @@ def test_checker(request, checker, result):
         result.write_ast(data)
 
     assert data == result.read_ast()
+
+
+def test_readline(source, checks, options):
+    from flake8_rst.checker import RstFileChecker
+
+    checker = RstFileChecker(str(source), checks, options)
+    lines = checker.processor.read_lines()
+
+    with source.open() as f:
+        assert f.read() == ''.join(lines)
