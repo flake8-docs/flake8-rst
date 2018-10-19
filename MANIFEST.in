@@ -1,0 +1,13 @@
+include MANIFEST.in
+include LICENSE
+include Makefile
+include README.md
+
+graft flake8_rst
+graft tests
+
+include tox.ini
+exclude .travis.yml
+
+global-exclude .git*
+global-exclude __pycache__/*
