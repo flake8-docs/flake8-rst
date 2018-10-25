@@ -3,6 +3,8 @@ include LICENSE
 include Makefile
 include README.md
 
+include .bumpversion.cfg
+
 graft flake8_rst
 graft tests
 
