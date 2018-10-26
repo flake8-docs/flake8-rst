@@ -1,4 +1,8 @@
-# flake8-rst module [![Build Status](https://travis-ci.org/kataev/flake8-rst.svg?branch=master)](https://travis-ci.org/kataev/flake8-rst)
+# flake8-rst module 
+[![PyPI](https://img.shields.io/pypi/v/flake8-rst.svg)](https://pypi.org/project/flake8-rst/)
+[![conda-forge](https://anaconda.org/conda-forge/flake8-rst/badges/version.svg)](https://anaconda.org/conda-forge/flake8-rst)
+[![Build Status](https://travis-ci.org/kataev/flake8-rst.svg?branch=master)](https://travis-ci.org/kataev/flake8-rst)
+
 Allows run flake8 on code snippets in docstrings or RST files.
 
 
