@@ -28,32 +28,34 @@ ANCHOR_RE = re.compile(
     re.MULTILINE,
 )
 
+EXPRESSIONS = (RST_RE, ANCHOR_RE)
+
 
 def find_sourcecode(src):
-    for expression in [RST_RE, ANCHOR_RE]:
-        for match in expression.finditer(src):
-            origin_code = match.group('code')
+    matches = (match for expression in EXPRESSIONS for match in expression.finditer(src))
+    for match in matches:
+        origin_code = match.group('code')
 
-            try:
-                min_indent = min(INDENT_RE.findall(origin_code))
-            except ValueError:
-                min_indent = ''
+        try:
+            min_indent = min(INDENT_RE.findall(origin_code))
+        except ValueError:
+            min_indent = ''
 
-            indent = len(min_indent)
-            code = textwrap.dedent(origin_code)
+        indent = len(min_indent)
+        code = textwrap.dedent(origin_code)
 
-            if '>>>' in code:
-                indent += 4
-                lines = []
+        if '>>>' in code:
+            indent += 4
+            lines = []
 
-                for i, line in enumerate(code.split('\n')):
-                    for anchor in ANCHORS:
-                        if line.startswith(anchor):
-                            lines.append(line[len(anchor):])
-                            break
+            for i, line in enumerate(code.split('\n')):
+                for anchor in ANCHORS:
+                    if line.startswith(anchor):
+                        lines.append(line[len(anchor):])
+                        break
 
-                code = '\n'.join(lines)
+            code = '\n'.join(lines)
 
-            line_number = src[:match.start()].count('\n') + match.group('before').count('\n')
+        line_number = src[:match.start()].count('\n') + match.group('before').count('\n')
 
-            yield code.rstrip(), indent, line_number
+        yield code.rstrip(), indent, line_number
