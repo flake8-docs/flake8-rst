@@ -1,9 +1,10 @@
 import re
 import textwrap
+from collections import deque
 
 RST_RE = re.compile(
     r'(?P<before>'
-    r'^(?P<indent> *)\.\. (code-block|sourcecode|ipython):: (python|pycon)\n'
+    r'^(?P<indent> *)\.\. (code-block|sourcecode|ipython)::( (i?python|pycon))?\n'
     r'((?P=indent) +:.*\n)*'
     r'\n*'
     r')'
@@ -20,15 +21,59 @@ ANCHORS = (
 )
 
 ANCHOR_RE = re.compile(
-    r'(?P<before>'
-    r'(?P<code>('
-    r'^(?P<indent> *)>>> .*\n'
-    r'^(((?P=indent)(>>>|...)(.*))?\n)+)'
-    r'))',
+    r'(?P<before>.*\n)'
+    r'(?P<code>'
+    r'^(?:(?P<indent> *)(?:>{3}) ?.*\n)+'
+    r'^(?:(?P=indent)(?:>{3}|\.{3}) ?.*\n)*'
+    r')',
     re.MULTILINE,
 )
 
-EXPRESSIONS = (RST_RE, ANCHOR_RE)
+INTERN_ANCHOR_RE = re.compile(
+    r'(?P<before>'
+    r'\n*'
+    r')'
+    r'^(?P<indent>(?:>{3}|\.{3}) ?)(?P<code>.*)$|^(?!>{3}|\.{3})$',
+    re.MULTILINE,
+)
+
+ANCHOR_IN_RE = re.compile(
+    r'(?P<before>'
+    r'\n*'
+    r')'
+    r'^(?P<indent>(?:(?:In \[(\d+)\]:)|(?: +\.{4}:)) ?)(?P<code>.*)$|^(?!(?:In \[(\d+)\]:)|(?: +\.{4}:))$',
+    re.MULTILINE,
+)
+
+EXPRESSIONS = [RST_RE, ANCHOR_RE]
+
+
+def strip_pycon(src, indent, line_number, *expressions):
+    matches = (match for expression in expressions for match in expression.finditer(src))
+    result = []
+    skipped_lines = 0
+    for match in matches:
+        try:
+            origin_code = match.group('code')
+            indent_ = len(match.group('indent'))
+
+            for _ in range(skipped_lines):
+                result.append(('# noqa', 0))
+            skipped_lines = 0
+
+            result.append((origin_code, indent_))
+        except TypeError:
+            if result:
+                skipped_lines += 1
+
+    if result:
+        code, indent_ = zip(*result)
+        print(src)
+        print(indent)
+        print("\n".join(code).rstrip())
+        return "\n".join(code).rstrip(), indent + max(indent_), line_number
+    else:
+        raise AttributeError
 
 
 def find_sourcecode(src):
@@ -37,25 +82,16 @@ def find_sourcecode(src):
         origin_code = match.group('code')
 
         try:
-            min_indent = min(INDENT_RE.findall(origin_code))
+            indent = len(min(INDENT_RE.findall(origin_code)))
         except ValueError:
-            min_indent = ''
+            indent = 0
 
-        indent = len(min_indent)
-        code = textwrap.dedent(origin_code)
+        code = "\n".join([line[indent:] for line in origin_code.split("\n")])
+        start__count = src[:match.start()].count('\n')
+        before__count = match.group('before').count('\n')
+        line_number = start__count + before__count
 
-        if '>>>' in code:
-            indent += 4
-            lines = []
-
-            for i, line in enumerate(code.split('\n')):
-                for anchor in ANCHORS:
-                    if line.startswith(anchor):
-                        lines.append(line[len(anchor):])
-                        break
-
-            code = '\n'.join(lines)
-
-        line_number = src[:match.start()].count('\n') + match.group('before').count('\n')
-
-        yield code.rstrip(), indent, line_number
+        try:
+            yield strip_pycon(code, indent, line_number, INTERN_ANCHOR_RE, ANCHOR_IN_RE)
+        except AttributeError:
+            yield code.rstrip(), indent, line_number
