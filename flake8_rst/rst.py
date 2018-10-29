@@ -3,13 +3,14 @@ import textwrap
 
 RST_RE = re.compile(
     r'(?P<before>'
-    r'^(?P<indent> *)\.\. (code-block|sourcecode):: (python|pycon)\n'
+    r'^(?P<indent> *)\.\. (code-block|sourcecode|ipython):: (python|pycon)\n'
     r'((?P=indent) +:.*\n)*'
     r'\n*'
     r')'
     r'(?P<code>(^((?P=indent) +.*)?\n)+)',
     re.MULTILINE,
 )
+
 INDENT_RE = re.compile('^ +(?=[^ ])', re.MULTILINE)
 TRAILING_NL_RE = re.compile(r'\n+\Z', re.MULTILINE)
 
@@ -18,9 +19,21 @@ ANCHORS = (
     '>>>', '...',  # empty lines
 )
 
+ANCHOR_RE = re.compile(
+    r'(?P<before>'
+    r'(?P<code>('
+    r'^(?P<indent> *)>>> .*\n'
+    r'^(((?P=indent)(>>>|...)(.*))?\n)+)'
+    r'))',
+    re.MULTILINE,
+)
+
+EXPRESSIONS = (RST_RE, ANCHOR_RE)
+
 
 def find_sourcecode(src):
-    for match in RST_RE.finditer(src):
+    matches = (match for expression in EXPRESSIONS for match in expression.finditer(src))
+    for match in matches:
         origin_code = match.group('code')
 
         try:
