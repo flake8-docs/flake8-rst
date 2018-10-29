@@ -114,8 +114,10 @@ class RstFileChecker(FileChecker):
             return error_code
 
         if error_code == 'E999':
+            line = self.lines[line_number - self.skip - 1]
             line_number = line_number + self.start - self.skip
         else:
+            line = self.lines[line_number - 1]
             line_number = line_number + self.start
 
         return super(RstFileChecker, self).report(error_code, line_number, column + self.indent, text, line=line)

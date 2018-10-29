@@ -1,6 +1,4 @@
 import re
-import textwrap
-from collections import deque
 
 RST_RE = re.compile(
     r'(?P<before>'
@@ -22,18 +20,13 @@ ANCHORS = (
 
 ANCHOR_RE = re.compile(
     r'(?P<before>.*\n)'
-    r'(?P<code>'
-    r'^(?:(?P<indent> *)(?:>{3}) ?.*\n)+'
-    r'^(?:(?P=indent)(?:>{3}|\.{3}) ?.*\n)*'
-    r')',
+    r'(?P<code>^>{3} (.+\n)+)',
     re.MULTILINE,
 )
 
 INTERN_ANCHOR_RE = re.compile(
-    r'(?P<before>'
-    r'\n*'
-    r')'
-    r'^(?P<indent>(?:>{3}|\.{3}) ?)(?P<code>.*)$|^(?!>{3}|\.{3})$',
+    r'(?P<before>\n*)'
+    r'^((?P<indent>(?:>{3}|\.{3}) ?)(?P<code>.*))$|^(?!>{3}|\.{3})(?P<output>.*)$',
     re.MULTILINE,
 )
 
@@ -41,7 +34,7 @@ ANCHOR_IN_RE = re.compile(
     r'(?P<before>'
     r'\n*'
     r')'
-    r'^(?P<indent>(?:(?:In \[(\d+)\]:)|(?: +\.{4}:)) ?)(?P<code>.*)$|^(?!(?:In \[(\d+)\]:)|(?: +\.{4}:))$',
+    r'^(?P<indent>(?:(?:In \[(\d+)\]:)|(?: +\.{4}:)) ?)(?P<code>.*)$|^(?!In \[(\d+)\]:)|(?: +\.{4}:)(?P<output>.*)$',
     re.MULTILINE,
 )
 
@@ -49,31 +42,28 @@ EXPRESSIONS = [RST_RE, ANCHOR_RE]
 
 
 def strip_pycon(src, indent, line_number, *expressions):
-    matches = (match for expression in expressions for match in expression.finditer(src))
-    result = []
-    skipped_lines = 0
-    for match in matches:
-        try:
+    has_stripped = False
+    for code_block in src.split('\n\n'):
+        matches = (match for expression in expressions for match in re.finditer(expression, code_block))
+        current_block = []
+        for match in matches:
             origin_code = match.group('code')
-            indent_ = len(match.group('indent'))
+            indent_ = match.group('indent')
+            output = match.group('output')
 
-            for _ in range(skipped_lines):
-                result.append(('# noqa', 0))
-            skipped_lines = 0
+            if origin_code is not None:
+                current_block.append((origin_code, len(indent_) if indent_ else 0))
+            elif current_block and output:
+                current_block.append(('# ' + output, 0))
 
-            result.append((origin_code, indent_))
-        except TypeError:
-            if result:
-                skipped_lines += 1
+        if current_block:
+            has_stripped = True
+            code, indent_ = zip(*current_block)
+            yield "\n".join(code), indent + max(indent_), line_number
+            line_number += len(current_block) + 1
 
-    if result:
-        code, indent_ = zip(*result)
-        print(src)
-        print(indent)
-        print("\n".join(code).rstrip())
-        return "\n".join(code).rstrip(), indent + max(indent_), line_number
-    else:
-        raise AttributeError
+    if not has_stripped:
+        yield src, indent, line_number
 
 
 def find_sourcecode(src):
@@ -91,7 +81,5 @@ def find_sourcecode(src):
         before__count = match.group('before').count('\n')
         line_number = start__count + before__count
 
-        try:
-            yield strip_pycon(code, indent, line_number, INTERN_ANCHOR_RE, ANCHOR_IN_RE)
-        except AttributeError:
+        for code, indent, line_number in strip_pycon(code, indent, line_number, INTERN_ANCHOR_RE, ANCHOR_IN_RE):
             yield code.rstrip(), indent, line_number

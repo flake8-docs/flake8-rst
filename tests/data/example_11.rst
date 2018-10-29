@@ -4,11 +4,11 @@ Each element in a tuple is a value, and can be in multiple tuples and have multi
 
 .. code-block:: ipython
 
-   In [23]: name = 'Brian'
-   In [24]: other = brian
-   In [25]: a = (1, 2, name)
-   In [26]: b = (3, 4, other)
-   In [27]: for i in range(3):
+   In [8]: name = 'Brian'
+   In [9]: other = brian
+   In [10]: a = (1, 2, name)
+   In [11]: b = (3, 4, other)
+   In [12]: for i in range(3):
       ....:    print(a[i] is b[i])
       ....:
    False False True
