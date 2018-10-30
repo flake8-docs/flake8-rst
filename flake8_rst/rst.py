@@ -24,46 +24,50 @@ ANCHOR_RE = re.compile(
     re.MULTILINE,
 )
 
-INTERN_ANCHOR_RE = re.compile(
+JUPYTER_RE = re.compile(
     r'(?P<before>\n*)'
     r'^((?P<indent>(?:>{3}|\.{3}) ?)(?P<code>.*))$|^(?!>{3}|\.{3})(?P<output>.*)$',
     re.MULTILINE,
 )
 
-ANCHOR_IN_RE = re.compile(
-    r'(?P<before>'
-    r'\n*'
-    r')'
+IPYTHON_RE = re.compile(
+    r'(?P<before>\n*)'
     r'^(?P<indent>(?:(?:In \[(\d+)\]:)|(?: +\.{4}:)) ?)(?P<code>.*)$|^(?!In \[(\d+)\]:)|(?: +\.{4}:)(?P<output>.*)$',
     re.MULTILINE,
 )
 
-EXPRESSIONS = [RST_RE, ANCHOR_RE]
+EXPRESSIONS = (RST_RE, ANCHOR_RE)
+CONSOLE_EXPRESSIONS = (JUPYTER_RE, IPYTHON_RE)
 
 
-def strip_pycon(src, indent, line_number, *expressions):
-    has_stripped = False
-    for code_block in src.split('\n\n'):
-        matches = (match for expression in expressions for match in re.finditer(expression, code_block))
-        current_block = []
-        for match in matches:
-            origin_code = match.group('code')
-            indent_ = match.group('indent')
-            output = match.group('output')
+def strip_pycon(src, indent, line_number):
+    """Prepares code-blocks with code from console
 
-            if origin_code is not None:
-                current_block.append((origin_code, len(indent_) if indent_ else 0))
-            elif current_block and output:
-                current_block.append(('# ' + output, 0))
+    Matches each line to be either of form: '<indent> <code>' or '<comment>'
+    Removes the <indent> block and comments out lines without <code>
+    """
 
-        if current_block:
-            has_stripped = True
-            code, indent_ = zip(*current_block)
-            yield "\n".join(code), indent + max(indent_), line_number
-            line_number += len(current_block) + 1
+    # Inserting # in empty lines allow matching them as comments.
+    # Therefore resulting code-block keeps its length and reported
+    # line_numbers are correct.
+    code_block = '\n#\n'.join(src.split('\n\n'))
+    matches = (match for expression in CONSOLE_EXPRESSIONS for match in re.finditer(expression, code_block))
+    current_block = []
+    for match in matches:
+        origin_code = match.group('code')
+        indent_ = match.group('indent') or ''
+        output = match.group('output')
 
-    if not has_stripped:
-        yield src, indent, line_number
+        if origin_code is not None:
+            current_block.append((origin_code, len(indent_)))
+        elif current_block and output:
+            current_block.append(('# ' + output if output != '#' else '#', 0))
+
+    if current_block:
+        code, indent_ = zip(*current_block)
+        return "\n".join(code).rstrip(), indent + max(indent_), line_number
+    else:
+        raise ValueError('Could not find any code inside src.')
 
 
 def find_sourcecode(src):
@@ -76,10 +80,12 @@ def find_sourcecode(src):
         except ValueError:
             indent = 0
 
-        code = "\n".join([line[indent:] for line in origin_code.split("\n")])
-        start__count = src[:match.start()].count('\n')
-        before__count = match.group('before').count('\n')
-        line_number = start__count + before__count
+        code = "\n".join([line[indent:] for line in origin_code.split("\n")]).rstrip()
+        start_count = src[:match.start()].count('\n')
+        before_count = match.group('before').count('\n')
+        line_number = start_count + before_count
 
-        for code, indent, line_number in strip_pycon(code, indent, line_number, INTERN_ANCHOR_RE, ANCHOR_IN_RE):
-            yield code.rstrip(), indent, line_number
+        try:
+            yield strip_pycon(code, indent, line_number)
+        except ValueError:
+            yield code, indent, line_number
