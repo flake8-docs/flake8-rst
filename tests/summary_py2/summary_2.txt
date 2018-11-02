@@ -1,0 +1,6 @@
+./data/example_2.py:9:19: F821 undefined name 'LdaModel'
+./data/example_2.py:9:35: F821 undefined name 'mm'
+./data/example_2.py:9:47: F821 undefined name 'id2word'
+./data/example_2.py:12:19: F821 undefined name 'LdaModel'
+./data/example_2.py:12:35: F821 undefined name 'mm'
+./data/example_2.py:12:47: F821 undefined name 'id2word'

@@ -1,0 +1,10 @@
+./data/example_4.py:14:9: F401 'gensim.models.AuthorTopicModel' imported but unused
+./data/example_4.py:15:9: F401 'gensim.corpora.mmcorpus' imported but unused
+./data/example_4.py:16:9: F401 'gensim.test.utils.common_dictionary' imported but unused
+./data/example_4.py:16:9: F401 'gensim.test.utils.temporary_file' imported but unused
+./data/example_4.py:16:9: F401 'gensim.test.utils.datapath' imported but unused
+./data/example_4.py:24:9: F401 'gensim.models.AuthorTopicModel' imported but unused
+./data/example_4.py:25:9: F401 'gensim.corpora.mmcorpus' imported but unused
+./data/example_4.py:26:9: F401 'gensim.test.utils.common_dictionary' imported but unused
+./data/example_4.py:26:9: F401 'gensim.test.utils.temporary_file' imported but unused
+./data/example_4.py:26:9: F401 'gensim.test.utils.datapath' imported but unused

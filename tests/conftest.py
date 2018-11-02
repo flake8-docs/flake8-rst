@@ -14,6 +14,7 @@ import pytest
 ROOT_DIR = pathlib.Path(__file__).parent
 DATA_DIR = ROOT_DIR / 'data'
 RESULT_DIR = ROOT_DIR / ('result_py%s' % (sys.version_info[0]))
+SUMMARY_DIR = ROOT_DIR / ('summary_py%s' % (sys.version_info[0]))
 
 
 @pytest.fixture()
@@ -46,14 +47,26 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     files = {}
+    if 'checker' in metafunc.fixturenames and 'result' in metafunc.fixturenames:
+        optional_files = list(RESULT_DIR.glob('*'))
+        parameterize = 'checker,result'
+        result_prefix = 'result'
+    elif 'summary' in metafunc.fixturenames and 'result' in metafunc.fixturenames:
+        optional_files = list(SUMMARY_DIR.glob('*'))
+        parameterize = 'summary,result'
+        result_prefix = 'summary'
+    else:
+        optional_files = []
+        parameterize = None
+        result_prefix = None
 
-    for f in list(DATA_DIR.glob('*')) + list(RESULT_DIR.glob('*')):
+    for f in list(DATA_DIR.glob('*')) + optional_files:
         name, number = f.stem.split('_')
         data = files.setdefault(number, [None, None])
 
         if name == 'example':
             i = 0
-        elif name == 'result':
+        elif name == result_prefix:
             i = 1
         else:
             raise ValueError('Not properly configured')
@@ -66,6 +79,6 @@ def pytest_generate_tests(metafunc):
 
         metafunc.parametrize('source', source, ids=ids)
 
-    if 'checker' in metafunc.fixturenames and 'result' in metafunc.fixturenames:
+    if parameterize:
         ids, values = zip(*files.items())
-        metafunc.parametrize('checker,result', values, ids=ids, indirect=True)
+        metafunc.parametrize(parameterize, values, ids=ids, indirect=True)
