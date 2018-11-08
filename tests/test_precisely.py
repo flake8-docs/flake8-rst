@@ -1,3 +1,5 @@
+import tempfile
+
 import pytest
 
 
@@ -28,6 +30,17 @@ def checker(request, options, checks):
 
 
 @pytest.fixture()
+def summary(request, options, checks):
+    from flake8_rst.application import Application
+    with tempfile.NamedTemporaryFile() as file:
+        application = Application()
+        application.initialize(["--output-file={}".format(file.name)])
+        application.run_checks([str(request.param)])
+        application.report()
+        return file.read().decode('utf-8')
+
+
+@pytest.fixture()
 def result(request):
     if not request.param or not request.param.exists():
         return ()
@@ -46,6 +59,18 @@ def test_checker(request, checker, result):
         result.write_ast(data)
 
     assert data == result.read_ast()
+
+
+def test_summary(request, summary, result):
+    path_to_data, _, _ = summary.partition('data')
+    data = summary.replace(path_to_data, './')
+
+    if request.config.getoption('--refresh'):
+        result.write_text(data)
+
+    expected = result.read_text()
+    for line in data.split('\n'):
+        assert line in expected
 
 
 def test_readline(source, checks, options):

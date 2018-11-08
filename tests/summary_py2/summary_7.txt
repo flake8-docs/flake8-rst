@@ -1,0 +1,2 @@
+./data/example_7.py:39:88: E501 line too long (90 > 79 characters)
+./data/example_7.py:56:88: E501 line too long (90 > 79 characters)
