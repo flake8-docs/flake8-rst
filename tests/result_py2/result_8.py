@@ -1,4 +1,6 @@
 ('test_precisely',
- [('E402', 26, 16, 'module level import not at top of file', None),
-  ('E402', 31, 16, 'module level import not at top of file', None)],
- {'logical lines': 15, 'physical lines': 15, 'tokens': 102})
+ [('E402', 28, 16, 'module level import not at top of file',
+   '                from gensim.parsing.porter import PorterStemmer\n'),
+  ('E402', 35, 16, 'module level import not at top of file',
+   '                from gensim.parsing.porter import PorterStemmer\n')],
+ {'logical lines': 20, 'physical lines': 20, 'tokens': 112})

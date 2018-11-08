@@ -1,8 +1,8 @@
 ('test_precisely',
- [('F821', 21, 10, "undefined name 'LdaModel'", None),
-  ('F821', 21, 26, "undefined name 'mm'", None),
-  ('F821', 21, 38, "undefined name 'id2word'", None),
-  ('F821', 23, 10, "undefined name 'LdfModel'", None),
-  ('F821', 23, 26, "undefined name 'cm'", None),
-  ('F821', 23, 38, "undefined name 'id2word'", None)],
- {'logical lines': 5, 'physical lines': 6, 'tokens': 52})
+ [('F821', 12, 14, "undefined name 'LdbModel'",
+   u'        ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)\n'),
+  ('F821', 12, 30, "undefined name 'mm'",
+   u'        ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)\n'),
+  ('F821', 12, 42, "undefined name 'id2word'",
+   u'        ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)\n')],
+ {'logical lines': 3, 'physical lines': 3, 'tokens': 25})

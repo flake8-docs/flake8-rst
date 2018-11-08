@@ -60,7 +60,7 @@ class RstManager(Manager):
 
                 lines = checker.processor.read_lines()
 
-                for code, indent, line_number in find_sourcecode(''.join(lines)):
+                for code, indent, line_number in find_sourcecode(filename, ''.join(lines)):
                     checker = RstFileChecker.from_sourcecode(
                         filename=filename, checks=checks, options=self.options,
                         start=line_number, indent=indent,
@@ -114,8 +114,10 @@ class RstFileChecker(FileChecker):
             return error_code
 
         if error_code == 'E999':
+            line = ' ' * self.indent + self.lines[line_number - self.skip - 1]
             line_number = line_number + self.start - self.skip
         else:
+            line = ' ' * self.indent + self.lines[line_number - 1]
             line_number = line_number + self.start
 
         return super(RstFileChecker, self).report(error_code, line_number, column + self.indent, text, line=line)
