@@ -1,0 +1,6 @@
+./data/example_11.rst:8:21: F821 undefined name 'brian'
+            other = brian
+                    ^
+./data/example_11.rst:12:16: E111 indentation is not a multiple of four
+               print(a[i] is b[i])
+               ^

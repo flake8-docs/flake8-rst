@@ -34,7 +34,7 @@ def summary(request, options, checks):
     from flake8_rst.application import Application
     with tempfile.NamedTemporaryFile() as file:
         application = Application()
-        application.initialize(["--output-file={}".format(file.name)])
+        application.initialize(["--output-file={}".format(file.name), "--show-source"])
         application.run_checks([str(request.param)])
         application.report()
         return file.read().decode('utf-8')
@@ -69,8 +69,7 @@ def test_summary(request, summary, result):
         result.write_text(data)
 
     expected = result.read_text()
-    for line in data.split('\n'):
-        assert line in expected
+    assert data == expected
 
 
 def test_readline(source, checks, options):

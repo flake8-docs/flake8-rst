@@ -1,4 +1,6 @@
-./data/example_8.py:26:17: E402 module level import not at top of file
-./data/example_8.py:31:17: E402 module level import not at top of file
-./data/example_8.py:47:17: E402 module level import not at top of file
-./data/example_8.py:52:17: E402 module level import not at top of file
+./data/example_8.py:28:17: E402 module level import not at top of file
+                from gensim.parsing.porter import PorterStemmer
+                ^
+./data/example_8.py:35:17: E402 module level import not at top of file
+                from gensim.parsing.porter import PorterStemmer
+                ^

@@ -1,6 +1,9 @@
-./data/example_10.py:21:11: F821 undefined name 'LdaModel'
-./data/example_10.py:21:27: F821 undefined name 'mm'
-./data/example_10.py:21:39: F821 undefined name 'id2word'
-./data/example_10.py:23:11: F821 undefined name 'LdfModel'
-./data/example_10.py:23:27: F821 undefined name 'cm'
-./data/example_10.py:23:39: F821 undefined name 'id2word'
+./data/example_10.py:12:15: F821 undefined name 'LdbModel'
+        ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)
+              ^
+./data/example_10.py:12:31: F821 undefined name 'mm'
+        ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)
+                              ^
+./data/example_10.py:12:43: F821 undefined name 'id2word'
+        ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)
+                                          ^
