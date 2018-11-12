@@ -60,11 +60,10 @@ class RstManager(Manager):
 
                 lines = checker.processor.read_lines()
 
-                for code, indent, line_number in find_sourcecode(filename, ''.join(lines)):
+                for code_block in find_sourcecode(filename, self.options.bootstrap, ''.join(lines)):
                     checker = RstFileChecker.from_sourcecode(
                         filename=filename, checks=checks, options=self.options,
-                        start=line_number, indent=indent,
-                        code=code, bootstrap=self.options.bootstrap
+                        code_block=code_block
                     )
 
                     checkers.append(checker)
@@ -74,25 +73,14 @@ class RstManager(Manager):
 
 
 class RstFileChecker(FileChecker):
-    def __init__(self, filename, checks, options, skip=0, lines=None, start=0, indent=0):
-        self.skip = skip
-        self.lines = lines
-        self.start = start
-        self.indent = indent
+    def __init__(self, filename, checks, options, code_block=None):
+        self.code = code_block
+        self.lines = code_block.complete_block.splitlines(True) if code_block else []
         super(RstFileChecker, self).__init__(filename, checks, options)
 
     @classmethod
-    def from_sourcecode(cls, code, bootstrap, **kwargs):
-        if bootstrap:
-            lines = [bootstrap + (os.linesep * 2)]
-            skip = lines[0].count(os.linesep)
-        else:
-            lines = []
-            skip = 0
-
-        lines.extend(line + os.linesep for line in code.split(os.linesep))
-
-        return RstFileChecker(lines=lines, skip=skip, **kwargs)
+    def from_sourcecode(cls, code_block, **kwargs):
+        return RstFileChecker(code_block=code_block, **kwargs)
 
     def _make_processor(self):
         try:
@@ -110,14 +98,12 @@ class RstFileChecker(FileChecker):
             return None
 
     def report(self, error_code, line_number, column, text, line=None):
-        if line_number <= self.skip:
+        try:
+            line = self.code.get_code_line(line_number)
+            if line['lineno'] == 0:
+                return error_code
+
+            return super(RstFileChecker, self).report(error_code, line['lineno'], column + line['indent'],
+                                                      text, line=line['raw_source'])
+        except IndexError:
             return error_code
-
-        if error_code == 'E999':
-            line = ' ' * self.indent + self.lines[line_number - self.skip - 1]
-            line_number = line_number + self.start - self.skip
-        else:
-            line = ' ' * self.indent + self.lines[line_number - 1]
-            line_number = line_number + self.start
-
-        return super(RstFileChecker, self).report(error_code, line_number, column + self.indent, text, line=line)

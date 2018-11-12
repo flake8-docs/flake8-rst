@@ -2,6 +2,8 @@ import tempfile
 
 import pytest
 
+from flake8_rst.sourceblock import SourceBlock
+
 
 @pytest.fixture()
 def options(mocker):
@@ -21,12 +23,9 @@ def checker(request, options, checks):
     from flake8_rst.checker import RstFileChecker
 
     with request.param.open() as f:
-        for code, indent, line_number in find_sourcecode(str(request.param), f.read()):
+        for code_block in find_sourcecode(str(request.param), '', f.read()):
             return RstFileChecker.from_sourcecode(
-                filename=__name__, code=code, bootstrap=False,
-                checks=checks.to_dictionary(), options=options,
-                start=line_number, indent=indent,
-            )
+                filename=__name__, checks=checks.to_dictionary(), options=options, code_block=code_block)
 
 
 @pytest.fixture()
@@ -63,7 +62,7 @@ def test_checker(request, checker, result):
 
 def test_summary(request, summary, result):
     path_to_data, _, _ = summary.partition('data')
-    data = summary.replace(path_to_data, './')
+    data = './'.join(sorted(summary.split(path_to_data)))
 
     if request.config.getoption('--refresh'):
         result.write_text(data)
@@ -74,9 +73,11 @@ def test_summary(request, summary, result):
 
 def test_readline(source, checks, options):
     from flake8_rst.checker import RstFileChecker
+    with source.open() as f:
+        src = f.read()
 
-    checker = RstFileChecker(str(source), checks, options)
+    source_block = SourceBlock.from_source('', src)
+    checker = RstFileChecker(str(source), checks, options, source_block)
     lines = checker.processor.read_lines()
 
-    with source.open() as f:
-        assert f.read() == ''.join(lines)
+    assert src == ''.join(lines)

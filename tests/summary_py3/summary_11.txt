@@ -1,6 +1,12 @@
-./data/example_11.rst:8:21: F821 undefined name 'brian'
-            other = brian
-                    ^
-./data/example_11.rst:12:16: E111 indentation is not a multiple of four
-               print(a[i] is b[i])
+./data/example_11.rst:11:13: E999 SyntaxError: invalid syntax
+   In [10]: %timeit a = (1, 2,name)  # noqa: F821
+            ^
+./data/example_11.rst:11:30: E231 missing whitespace after ','
+   In [10]: %timeit a = (1, 2,name)  # noqa: F821
+                             ^
+./data/example_11.rst:16:16: E111 indentation is not a multiple of four
+      ....:    print(a[i] is b[i])
                ^
+./data/example_11.rst:17:12: W391 blank line at end of file
+      ....:
+           ^

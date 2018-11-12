@@ -1,3 +1,18 @@
+./data/example_6.py:101:16: F821 undefined name 'S3Transfer'
+    transfer = S3Transfer(boto3.client('s3', 'us-west-2'))
+               ^
+./data/example_6.py:101:27: F821 undefined name 'boto3'
+    transfer = S3Transfer(boto3.client('s3', 'us-west-2'))
+                          ^
+./data/example_6.py:114:14: F821 undefined name 'boto3'
+    client = boto3.client('s3', 'us-west-2')
+             ^
+./data/example_6.py:115:14: F821 undefined name 'TransferConfig'
+    config = TransferConfig(
+             ^
+./data/example_6.py:120:16: F821 undefined name 'S3Transfer'
+    transfer = S3Transfer(client, config)
+               ^
 ./data/example_6.py:48:14: F821 undefined name 'boto3'
     client = boto3.client('s3', 'us-west-2')
              ^
@@ -16,18 +31,3 @@
 ./data/example_6.py:98:17: F821 undefined name 'sys'
                 sys.stdout.flush()
                 ^
-./data/example_6.py:101:16: F821 undefined name 'S3Transfer'
-    transfer = S3Transfer(boto3.client('s3', 'us-west-2'))
-               ^
-./data/example_6.py:101:27: F821 undefined name 'boto3'
-    transfer = S3Transfer(boto3.client('s3', 'us-west-2'))
-                          ^
-./data/example_6.py:114:14: F821 undefined name 'boto3'
-    client = boto3.client('s3', 'us-west-2')
-             ^
-./data/example_6.py:115:14: F821 undefined name 'TransferConfig'
-    config = TransferConfig(
-             ^
-./data/example_6.py:120:16: F821 undefined name 'S3Transfer'
-    transfer = S3Transfer(client, config)
-               ^

@@ -1,9 +1,6 @@
 ./data/example_7.py:31:9: E302 expected 2 blank lines, found 0
-        class EpochSaver(CallbackAny2Vec):
+    >>> class EpochSaver(CallbackAny2Vec):
         ^
-./data/example_7.py:38:13: E301 expected 1 blank line, found 0
-            def on_epoch_end(self, model):
-            ^
 ./data/example_7.py:39:88: E501 line too long (90 > 79 characters)
-                output_path = get_tmpfile('{}_epoch{}.model'.format(self.path_prefix, self.epoch))
+    ...         output_path = get_tmpfile('{}_epoch{}.model'.format(self.path_prefix, self.epoch))
                                                                                        ^

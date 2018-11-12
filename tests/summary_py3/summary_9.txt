@@ -1,6 +1,6 @@
-./data/example_9.py:8:9: E902 TokenError: EOF in multi-line statement
-        kek =(
-        ^
+./data/example_9.py:7:1: E902 TokenError: EOF in multi-line statement
+
+^
 ./data/example_9.py:8:14: E999 SyntaxError: unexpected EOF while parsing
         kek =(
              ^
