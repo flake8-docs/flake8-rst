@@ -62,3 +62,16 @@ def test_clean_doctest():
         block.clean()
         assert origin_code == block.source_block
         assert '>>>' not in origin_code
+
+
+@given(code_strategy, code_strategy, code_strategy)
+def test_merge_source_blocks(bootstrap, src_1, src_2):
+    block1 = SourceBlock.from_source(bootstrap, src_1)
+    block2 = SourceBlock.from_source(bootstrap, src_2, len(src_1.splitlines()) + 1)
+    expected = SourceBlock.from_source(bootstrap, src_1 + src_2)
+
+    merged = SourceBlock.merge(block1, block2)
+    reversed_merged = SourceBlock.merge(block2, block1)
+
+    assert expected.complete_block == merged.complete_block
+    assert expected.complete_block == reversed_merged.complete_block

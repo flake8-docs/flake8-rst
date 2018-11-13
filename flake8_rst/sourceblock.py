@@ -20,6 +20,22 @@ class SourceBlock(object):
         code_lines = [(i, line, line) for i, line in enumerate(src.splitlines(True), start=start_line)]
         return cls(boot_lines, code_lines)
 
+    @classmethod
+    def merge(cls, *source_blocks):
+        """Merge multiple SourceBlocks together
+
+        :type source_blocks: SourceBlock
+        """
+        main_block = source_blocks[0]
+        boot_lines = main_block._boot_lines
+        code_lines = []
+        for source_block in source_blocks:
+            if boot_lines != source_block._boot_lines:
+                raise AssertionError('You cannot merge SourceBlocks with different bootstraps!')
+            code_lines.extend(source_block._code_lines)
+        code_lines.sort(key=lambda line: line[0])
+        return cls(boot_lines, code_lines, main_block.directive, main_block.language)
+
     def __init__(self, boot_lines, code_lines, directive=None, language=None):
         self._boot_lines = boot_lines
         self._code_lines = code_lines
