@@ -1,6 +1,8 @@
 import doctest
 import re
 
+LINENO, SOURCE, RAW = range(3)
+
 
 def _match_default(match, group, default=None):
     try:
@@ -26,6 +28,8 @@ class SourceBlock(object):
 
         :type source_blocks: SourceBlock
         """
+        if len(source_blocks) == 1:
+            return source_blocks[0]
         main_block = source_blocks[0]
         boot_lines = main_block._boot_lines
         code_lines = []
@@ -33,7 +37,7 @@ class SourceBlock(object):
             if boot_lines != source_block._boot_lines:
                 raise AssertionError('You cannot merge SourceBlocks with different bootstraps!')
             code_lines.extend(source_block._code_lines)
-        code_lines.sort(key=lambda line: line[0])
+        code_lines.sort(key=lambda line: line[LINENO])
         return cls(boot_lines, code_lines, main_block.directive, main_block.language)
 
     def __init__(self, boot_lines, code_lines, directive=None, language=None):
@@ -47,18 +51,18 @@ class SourceBlock(object):
     @property
     def source_block(self):
         """Return code lines **without** bootstrap"""
-        return "".join((line[1] for line in self._code_lines))
+        return "".join((line[SOURCE] for line in self._code_lines))
 
     @property
     def complete_block(self):
         """Return code lines **with** bootstrap"""
-        return "".join([line[1] for line in self._boot_lines]) + "".join([line[1] for line in self._code_lines])
+        return "".join([line[SOURCE] for line in self._boot_lines + self._code_lines])
 
     def get_code_line(self, lineno):
         all_lines = self._boot_lines + self._code_lines
         line = all_lines[lineno - 1]
-        return {'lineno': line[0], 'indent': len(line[2]) - len(line[1]),
-                'source': line[1], 'raw_source': line[2]}
+        return {'lineno': line[LINENO], 'indent': len(line[RAW]) - len(line[SOURCE]),
+                'source': line[SOURCE], 'raw_source': line[RAW]}
 
     def find_blocks(self, expression):
 
@@ -77,7 +81,8 @@ class SourceBlock(object):
         indentation = min(expression.findall(self.source_block))
         if indentation:
             indent = len(indentation)
-            code_lines = [(line[0], line[1][indent:-1] + line[1][-1], line[2]) for line in self._code_lines]
+            code_lines = [(line[LINENO], line[SOURCE][indent:-1] + line[SOURCE][-1], line[RAW]) for line in
+                          self._code_lines]
             self._code_lines = code_lines
         return self
 
@@ -87,6 +92,9 @@ class SourceBlock(object):
             if code_lines:
                 self._code_lines = code_lines
                 break
+
+        if self.directive == 'ipython' and self.language == 'python':
+            self._code_lines = self.clean_console()
 
     def clean_doctest(self):
         try:
@@ -111,17 +119,17 @@ class SourceBlock(object):
         code_lines = []
         follow = 0
         for line in self._code_lines:
-            match = start_re.match(line[1])
+            match = start_re.match(line[SOURCE])
             if match and not self._should_ignore(match.group(2)):
                 follow = len(match.group(1))
                 src = self._remove_console_syntax(match.group(2))
-                code_lines.append((line[0], src, line[2]))
+                code_lines.append((line[LINENO], src, line[RAW]))
                 continue
             if not follow:
                 continue
-            match = follow_re.match(line[1][follow:])
+            match = follow_re.match(line[SOURCE][follow:])
             if match:
-                code_lines.append((line[0], match.group(1), line[2]))
+                code_lines.append((line[LINENO], match.group(1), line[RAW]))
                 continue
             follow = 0
 
@@ -139,3 +147,17 @@ class SourceBlock(object):
             if match:
                 return code_line.replace(match.group(1), '')
         return code_line
+
+    def clean_console(self):
+        code_lines = []
+        for code_line in self._code_lines:
+            source = code_line[SOURCE]
+            if self._should_ignore(source):
+                continue
+            src = self._remove_console_syntax(source)
+            if src == source:
+                code_lines.append(code_line)
+            else:
+                code_lines.append((code_line[LINENO], src, code_line[RAW]))
+
+        return code_lines
