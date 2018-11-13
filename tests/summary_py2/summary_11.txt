@@ -1,6 +1,3 @@
-./data/example_11.rst:11:13: E999 SyntaxError: invalid syntax
-   In [10]: %timeit a = (1, 2,name)  # noqa: F821
-            ^
 ./data/example_11.rst:11:30: E231 missing whitespace after ','
    In [10]: %timeit a = (1, 2,name)  # noqa: F821
                              ^
@@ -10,3 +7,6 @@
 ./data/example_11.rst:17:12: W391 blank line at end of file
       ....:
            ^
+./data/example_11.rst:9:20: F821 undefined name 'brian'
+   In [9]: other = brian
+                   ^

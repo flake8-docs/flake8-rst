@@ -2,6 +2,13 @@ import doctest
 import re
 
 
+def _match_default(match, group, default=None):
+    try:
+        return match.group(group)
+    except IndexError:
+        return default
+
+
 class SourceBlock(object):
 
     @classmethod
@@ -13,9 +20,13 @@ class SourceBlock(object):
         code_lines = [(i, line, line) for i, line in enumerate(src.splitlines(True), start=start_line)]
         return cls(boot_lines, code_lines)
 
-    def __init__(self, boot_lines, code_lines):
+    def __init__(self, boot_lines, code_lines, directive=None, language=None):
         self._boot_lines = boot_lines
         self._code_lines = code_lines
+        self.directive = directive
+        self.language = language
+        self.ignore_lines_with = [re.compile(r'^@savefig\s')]
+        self.console_syntax = [re.compile(r'^(%\S*\s)')]
 
     @property
     def source_block(self):
@@ -40,7 +51,10 @@ class SourceBlock(object):
             origin_code = str(match.group('code'))
             line_start = src[:match.start()].count('\n') + match.group('before').count('\n')
             code_slice = slice(line_start, line_start + len(origin_code.splitlines(True)))
-            yield SourceBlock(self._boot_lines, self._code_lines[code_slice])._remove_indentation()
+            directive = _match_default(match, 'directive')
+            language = _match_default(match, 'language')
+            yield SourceBlock(self._boot_lines, self._code_lines[code_slice],
+                              directive=directive, language=language)._remove_indentation()
 
     def _remove_indentation(self):
         expression = re.compile('(?P<indent>^ *).', re.MULTILINE)
@@ -59,10 +73,16 @@ class SourceBlock(object):
                 break
 
     def clean_doctest(self):
-        lines = doctest.DocTestParser().get_examples(self.source_block)
+        try:
+            lines = doctest.DocTestParser().get_examples(self.source_block)
+        except ValueError:
+            return None
         code_lines = []
         for line in lines:
-            for i, source in enumerate(line.source.splitlines(True)):
+            if self._should_ignore(line.source):
+                continue
+            src = self._remove_console_syntax(line.source)
+            for i, source in enumerate(src.splitlines(True)):
                 lineno, _, raw_code = self._code_lines[line.lineno + i]
                 assert source in raw_code
                 code_lines.append((lineno, source, raw_code))
@@ -76,9 +96,10 @@ class SourceBlock(object):
         follow = 0
         for line in self._code_lines:
             match = start_re.match(line[1])
-            if match:
+            if match and not self._should_ignore(match.group(2)):
                 follow = len(match.group(1))
-                code_lines.append((line[0], match.group(2), line[2]))
+                src = self._remove_console_syntax(match.group(2))
+                code_lines.append((line[0], src, line[2]))
                 continue
             if not follow:
                 continue
@@ -89,3 +110,16 @@ class SourceBlock(object):
             follow = 0
 
         return code_lines
+
+    def _should_ignore(self, code_line):
+        for pattern in self.ignore_lines_with:
+            if re.compile(pattern).match(code_line):
+                return True
+        return False
+
+    def _remove_console_syntax(self, code_line):
+        for pattern in self.console_syntax:
+            match = re.compile(pattern).match(code_line)
+            if match:
+                return code_line.replace(match.group(1), '')
+        return code_line
