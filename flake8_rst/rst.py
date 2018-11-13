@@ -6,10 +6,10 @@ from flake8_rst.sourceblock import SourceBlock
 RST_RE = re.compile(
     r'(?P<before>'
     r'^(?P<indent> *)\.\. (?P<directive>code-block|sourcecode|ipython)::( (?P<language>i?python|pycon))?\n'
-    r'((?P=indent) +:.*\n)*'
+    r'(?P<roles>(^(?P=indent) +:\S+:.*\n)*)'
     r'\n*'
     r')'
-    r'(?P<code>(^((?P=indent) {3}.*)?\n)+(^(?P=indent) {3}.*(\n)?))',
+    r'(?P<code>(^((?P=indent) {3} *.*)?\n)+(^(?P=indent) {3} *.*(\n)?))',
     re.MULTILINE,
 )
 
@@ -20,25 +20,24 @@ DOCSTRING_RE = re.compile(
 )
 
 
-def merge_by(predicate):
-    def tags_decorator(func):
-        @wraps(func)
-        def func_wrapper(*args, **kwargs):
-            blocks = []
-            for block in func(*args, **kwargs):
-                if predicate(block):
-                    blocks.append(block)
-                else:
-                    yield block
-            if blocks:
-                yield SourceBlock.merge(*blocks)
+def merge_by_group(func):
+    @wraps(func)
+    def func_wrapper(*args, **kwargs):
+        blocks = {}
+        for block in func(*args, **kwargs):
+            if 'group' in block.roles:
+                group = block.roles['group']
+                data = blocks.setdefault(group, [])
+                data.append(block)
+            else:
+                yield block
+        for merge_blocks in blocks.values():
+            yield SourceBlock.merge(*merge_blocks)
 
-        return func_wrapper
-
-    return tags_decorator
+    return func_wrapper
 
 
-@merge_by(lambda block: block.directive == 'ipython')
+@merge_by_group
 def find_sourcecode(filename, bootstrap, src):
     contains_python_code = filename.split('.')[-1].startswith('py')
     source = SourceBlock.from_source(bootstrap, src)

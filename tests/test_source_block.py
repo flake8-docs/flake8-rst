@@ -1,4 +1,5 @@
 import doctest
+import pytest
 
 try:
     import pathlib
@@ -75,3 +76,15 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
 
     assert expected.complete_block == merged.complete_block
     assert expected.complete_block == reversed_merged.complete_block
+
+
+@pytest.mark.parametrize("src, expected", [
+    (".. ipython:: python\n\n   code-line\n", {'group': 'ipython'}),
+    (".. ipython:: python\n   :flake8-group: code-block\n\n   code-line\n", {'group': 'code-block'}),
+    (".. code-block:: python\n\n   code-line\n", {}),
+    (".. code-block:: python\n   :flake8-group: test-123\n\n   code-line\n", {'group': 'test-123'}),
+])
+def test_get_roles(src, expected):
+    block = next(SourceBlock.from_source('', src).find_blocks(RST_RE))
+
+    assert expected == block.roles

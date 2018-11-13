@@ -3,12 +3,24 @@ import re
 
 LINENO, SOURCE, RAW = range(3)
 
+ROLE_RE = re.compile(':flake8-(\S*):\s(.*)$', re.MULTILINE)
+
 
 def _match_default(match, group, default=None):
     try:
         return match.group(group)
     except IndexError:
         return default
+
+
+def _extract_roles(match):
+    role_block = _match_default(match, 'roles')
+    roles = {}
+    if not role_block:
+        return roles
+    for match in ROLE_RE.finditer(role_block):
+        roles[match.group(1)] = match.group(2)
+    return roles
 
 
 class SourceBlock(object):
@@ -40,13 +52,17 @@ class SourceBlock(object):
         code_lines.sort(key=lambda line: line[LINENO])
         return cls(boot_lines, code_lines, main_block.directive, main_block.language)
 
-    def __init__(self, boot_lines, code_lines, directive=None, language=None):
+    def __init__(self, boot_lines, code_lines, directive='', language='', roles=None):
         self._boot_lines = boot_lines
         self._code_lines = code_lines
         self.directive = directive
         self.language = language
-        self.ignore_lines_with = [re.compile(r'^@savefig\s')]
+        self.roles = roles or {}
+        self.ignore_lines_with = [re.compile(r'^@(savefig\s|ok(except|warning))')]
         self.console_syntax = [re.compile(r'^(%\S*\s)')]
+
+        if directive == 'ipython' and 'group' not in self.roles:
+            self.roles['group'] = 'ipython'
 
     @property
     def source_block(self):
@@ -71,10 +87,11 @@ class SourceBlock(object):
             origin_code = str(match.group('code'))
             line_start = src[:match.start()].count('\n') + match.group('before').count('\n')
             code_slice = slice(line_start, line_start + len(origin_code.splitlines(True)))
-            directive = _match_default(match, 'directive')
-            language = _match_default(match, 'language')
+            directive = _match_default(match, 'directive', '')
+            language = _match_default(match, 'language', '')
+            roles = _extract_roles(match)
             yield SourceBlock(self._boot_lines, self._code_lines[code_slice],
-                              directive=directive, language=language)._remove_indentation()
+                              directive=directive, language=language, roles=roles)._remove_indentation()
 
     def _remove_indentation(self):
         expression = re.compile('(?P<indent>^ *).', re.MULTILINE)
