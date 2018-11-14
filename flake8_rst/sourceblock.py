@@ -11,7 +11,7 @@ DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s|ok(except|warning))')]
 DEFAULT_CONSOLE_SYSNTAX = [re.compile(r'^(%\S*\s)')]
 
 IPYTHON_START_RE = re.compile('In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
-IPYTHON_FOLLOW_RE = re.compile(' \.{4}:\s?(?P<code>.*\n)')
+IPYTHON_FOLLOW_RE = re.compile('^\.{3}:\s?(?P<code>.*\n)')
 
 ROLES = ['group', 'bootstrap']
 
@@ -160,7 +160,7 @@ class SourceBlock(object):
         for line in self._source_lines:
             match = IPYTHON_START_RE.match(line[SOURCE])
             if match and not self._should_ignore(match.group('code')):
-                follow = len(match.group('lineno'))
+                follow = len(match.group('lineno')) + 2
                 src = self._remove_console_syntax(match.group('code'))
                 code_lines.append((line[LINENO], src, line[RAW]))
                 continue
