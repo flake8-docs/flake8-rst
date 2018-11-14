@@ -25,7 +25,8 @@ def checker(request, options, checks):
     with request.param.open() as f:
         for code_block in find_sourcecode(str(request.param), '', f.read()):
             return RstFileChecker.from_sourcecode(
-                filename=__name__, checks=checks.to_dictionary(), options=options, code_block=code_block)
+                filename=__name__, checks=checks.to_dictionary(), options=options,
+                style_guide=None, code_block=code_block)
 
 
 @pytest.fixture()
@@ -77,7 +78,7 @@ def test_readline(source, checks, options):
         src = f.read()
 
     source_block = SourceBlock.from_source('', src)
-    checker = RstFileChecker(str(source), checks, options, source_block)
+    checker = RstFileChecker(str(source), checks, options, code_block=source_block)
     lines = checker.processor.read_lines()
 
     assert src == ''.join(lines)

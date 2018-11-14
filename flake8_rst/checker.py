@@ -1,5 +1,3 @@
-from typing import Any
-
 import optparse
 import os
 import sys
@@ -96,12 +94,19 @@ def inject_options(roles, options):
 
 class RstFileChecker(FileChecker):
     def __init__(self, filename, checks, options, style_guide=None, code_block=None):
-        self.code = code_block
         self.style_guide = style_guide
-        self.lines = code_block.complete_block.splitlines(True) if code_block else []
-        new_options = inject_options(code_block.roles, options) if code_block else options
-        self.decider = DecisionEngine(new_options)
-        super(RstFileChecker, self).__init__(filename, checks, new_options)
+        self.code = code_block
+
+        if code_block:
+            options = inject_options(code_block.roles, options)
+            self.lines = code_block.complete_block.splitlines(True)
+        else:
+            self.lines = []
+
+        if self.style_guide:
+            self.decider = DecisionEngine(options)
+
+        super(RstFileChecker, self).__init__(filename, checks, options)
 
     @classmethod
     def from_sourcecode(cls, style_guide, code_block, **kwargs):
@@ -134,6 +139,6 @@ class RstFileChecker(FileChecker):
             return error_code
 
     def __getattribute__(self, name):
-        if name == 'results':
+        if name == 'results' and self.style_guide:
             self.style_guide.decider = self.decider
         return super(RstFileChecker, self).__getattribute__(name)

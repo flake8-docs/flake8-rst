@@ -52,5 +52,6 @@ def find_sourcecode(filename, bootstrap, src):
             yield code_block
 
         if not found_code_block:
-            source_block.clean()
-            yield source_block
+            source_code = source_block.clean_doctest()
+            if source_code:
+                yield SourceBlock(source_block.boot_lines, source_code, roles=source_block.roles)
