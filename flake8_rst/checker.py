@@ -1,3 +1,5 @@
+from typing import Any
+
 import optparse
 import os
 import sys
@@ -5,6 +7,7 @@ import sys
 from flake8 import utils
 from flake8.checker import FileChecker, Manager, LOG
 from flake8.processor import FileProcessor
+from flake8.style_guide import DecisionEngine
 
 from flake8_rst.rst import find_sourcecode
 
@@ -66,7 +69,7 @@ class RstManager(Manager):
                 for code_block in find_sourcecode(filename, self.options.bootstrap, ''.join(lines)):
                     checker = RstFileChecker.from_sourcecode(
                         filename=filename, checks=checks, options=self.options,
-                        code_block=code_block
+                        style_guide=self.style_guide, code_block=code_block
                     )
 
                     checkers.append(checker)
@@ -92,18 +95,17 @@ def inject_options(roles, options):
 
 
 class RstFileChecker(FileChecker):
-    def __init__(self, filename, checks, options, code_block=None):
+    def __init__(self, filename, checks, options, style_guide=None, code_block=None):
         self.code = code_block
+        self.style_guide = style_guide
         self.lines = code_block.complete_block.splitlines(True) if code_block else []
-
-        if code_block:
-            options = inject_options(code_block.roles, options)
-
-        super(RstFileChecker, self).__init__(filename, checks, options)
+        new_options = inject_options(code_block.roles, options) if code_block else options
+        self.decider = DecisionEngine(new_options)
+        super(RstFileChecker, self).__init__(filename, checks, new_options)
 
     @classmethod
-    def from_sourcecode(cls, code_block, **kwargs):
-        return RstFileChecker(code_block=code_block, **kwargs)
+    def from_sourcecode(cls, style_guide, code_block, **kwargs):
+        return RstFileChecker(style_guide=style_guide, code_block=code_block, **kwargs)
 
     def _make_processor(self):
         try:
@@ -130,3 +132,8 @@ class RstFileChecker(FileChecker):
                                                       text, line=line['raw_source'])
         except IndexError:
             return error_code
+
+    def __getattribute__(self, name):
+        if name == 'results':
+            self.style_guide.decider = self.decider
+        return super(RstFileChecker, self).__getattribute__(name)
