@@ -11,10 +11,6 @@ except ImportError:
 
 
 def add_custom_roles(directive_class):
-    """
-
-    :type directive_class: Type[Directive]
-    """
     if not directive_class:
         return
     for role in SOURCEBLOCK_ROLES + CHECKER_ROLES:
