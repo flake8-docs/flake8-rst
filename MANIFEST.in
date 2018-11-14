@@ -14,3 +14,4 @@ exclude .travis.yml
 global-exclude .git*
 global-exclude __pycache__/*
 global-exclude **/.hypothesis*
+global-exclude *.py[co]

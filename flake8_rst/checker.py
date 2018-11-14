@@ -1,3 +1,4 @@
+import optparse
 import os
 import sys
 
@@ -6,6 +7,8 @@ from flake8.checker import FileChecker, Manager, LOG
 from flake8.processor import FileProcessor
 
 from flake8_rst.rst import find_sourcecode
+
+ROLES = ['set-ignore', 'set-select', 'add-ignore', 'add-select']
 
 
 class RstManager(Manager):
@@ -72,10 +75,30 @@ class RstManager(Manager):
         LOG.info('Checking %d files', len(self.checkers))
 
 
+def inject_options(roles, options):
+    new_options = optparse.Values(options.__dict__)
+    for key in ('ignore', 'select'):
+
+        if 'set-' + key in roles:
+            values = [value.strip() for value in roles['set-' + key].split(',')]
+            setattr(new_options, key, values)
+
+        if 'add-' + key in roles:
+            values = {value.strip() for value in roles['add-' + key].split(',')}
+            values.update(options.__dict__[key])
+            setattr(new_options, key, list(values))
+
+    return new_options
+
+
 class RstFileChecker(FileChecker):
     def __init__(self, filename, checks, options, code_block=None):
         self.code = code_block
         self.lines = code_block.complete_block.splitlines(True) if code_block else []
+
+        if code_block:
+            options = inject_options(code_block.roles, options)
+
         super(RstFileChecker, self).__init__(filename, checks, options)
 
     @classmethod

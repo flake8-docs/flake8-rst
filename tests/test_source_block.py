@@ -8,7 +8,7 @@ except ImportError:
 
 from flake8_rst.rst import RST_RE
 from flake8_rst.sourceblock import SourceBlock
-from hypothesis import assume, given
+from hypothesis import assume, given, note
 from hypothesis import strategies as st
 
 ROOT_DIR = pathlib.Path(__file__).parent
@@ -82,10 +82,23 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
     (".. ipython:: python\n\n   code-line\n", {'group': 'ipython'}),
     (".. ipython:: python\n   :flake8-group: None\n\n   code-line\n", {'group': 'None'}),
     (".. ipython:: python\n   :flake8-group: Anything\n\n   code-line\n", {'group': 'Anything'}),
+    (".. ipython:: python\n   :flake8-group: Anything\n   :flake8-bootstrap: import something\n\n   code-line\n",
+     {'bootstrap': 'import something', 'group': 'None'}),
     (".. code-block:: python\n\n   code-line\n", {'group': 'None'}),
     (".. code-block:: python\n   :flake8-group: test-123\n\n   code-line\n", {'group': 'test-123'}),
+    (".. code-block:: python\n   :flake8-bootstrap: import numpy as np; import pandas as pd\n\n   code-line\n",
+     {'bootstrap': 'import numpy as np; import pandas as pd', 'group': 'None'}),
 ])
 def test_get_roles(src, expected):
     block = next(SourceBlock.from_source('', src).find_blocks(RST_RE))
 
     assert expected == block.roles
+
+
+@given(code_strategy, code_strategy, st.lists(code_strategy, min_size=1))
+def test_inject_bootstrap_blocks(bootstrap, src, injected_bootstrap):
+    note(injected_bootstrap)
+    block = SourceBlock.from_source(bootstrap, src, roles={'bootstrap': '; '.join(injected_bootstrap)})
+    expected = SourceBlock.from_source('\n'.join(injected_bootstrap), src)
+
+    assert expected.complete_block == block.complete_block

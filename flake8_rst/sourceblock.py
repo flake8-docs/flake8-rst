@@ -3,13 +3,15 @@ import re
 
 LINENO, SOURCE, RAW = range(3)
 
-ROLE_RE = re.compile(':flake8-(?P<role>\S*):\s(?P<value>.*)$', re.MULTILINE)
+ROLE_RE = re.compile(':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
 DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s|ok(except|warning))')]
 DEFAULT_CONSOLE_SYSNTAX = [re.compile(r'^(%\S*\s)')]
 
 IPYTHON_START_RE = re.compile('In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
 IPYTHON_FOLLOW_RE = re.compile(' \.{4}:\s?(?P<code>.*\n)')
+
+ROLES = ['group', 'bootstrap']
 
 
 def _match_default(match, group, default=None):
@@ -32,13 +34,17 @@ def _extract_roles(match):
 class SourceBlock(object):
 
     @classmethod
-    def from_source(cls, bootstrap, src, start_line=1):
+    def from_source(cls, bootstrap, src, start_line=1, **kwargs):
         if bootstrap:
-            boot_lines = [(0, line + '\n', line + '\n') for line in bootstrap.splitlines()]
+            boot_lines = SourceBlock.convert_bootstrap(bootstrap)
         else:
             boot_lines = []
         code_lines = [(i, line, line) for i, line in enumerate(src.splitlines(True), start=start_line)]
-        return cls(boot_lines, code_lines)
+        return cls(boot_lines, code_lines, **kwargs)
+
+    @staticmethod
+    def convert_bootstrap(bootstrap, split='\n'):
+        return [(0, line + '\n', line + '\n') for line in bootstrap.split(split)]
 
     @classmethod
     def merge(cls, *source_blocks):
@@ -66,6 +72,9 @@ class SourceBlock(object):
         self.console_syntax = DEFAULT_CONSOLE_SYSNTAX
 
         self.roles.setdefault('group', 'None' if directive != 'ipython' else directive)
+        if 'bootstrap' in self.roles:
+            self.roles['group'] = 'None'
+            self._boot_lines = SourceBlock.convert_bootstrap(self.roles['bootstrap'], split='; ')
 
     @property
     def boot_lines(self):
