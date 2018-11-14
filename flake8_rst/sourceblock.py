@@ -5,6 +5,8 @@ LINENO, SOURCE, RAW = range(3)
 
 ROLE_RE = re.compile(':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
+INDENT_RE = re.compile('(?P<indent>^ *).', re.MULTILINE)
+
 DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s|ok(except|warning))')]
 DEFAULT_CONSOLE_SYSNTAX = [re.compile(r'^(%\S*\s)')]
 
@@ -117,8 +119,7 @@ class SourceBlock(object):
             yield source_block
 
     def _remove_indentation(self):
-        expression = re.compile('(?P<indent>^ *).', re.MULTILINE)
-        indentation = min(expression.findall(self.source_block))
+        indentation = min(INDENT_RE.findall(self.source_block))
         if indentation:
             indent = len(indentation)
             source_lines = [(line[LINENO], line[SOURCE][indent:-1] + line[SOURCE][-1], line[RAW])
