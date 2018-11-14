@@ -25,8 +25,8 @@ def merge_by_group(func):
     def func_wrapper(*args, **kwargs):
         blocks = {}
         for block in func(*args, **kwargs):
-            if 'group' in block.roles:
-                group = block.roles['group']
+            group = block.roles['group']
+            if group != 'None':
                 data = blocks.setdefault(group, [])
                 data.append(block)
             else:

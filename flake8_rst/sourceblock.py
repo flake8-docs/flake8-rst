@@ -3,7 +3,13 @@ import re
 
 LINENO, SOURCE, RAW = range(3)
 
-ROLE_RE = re.compile(':flake8-(\S*):\s(.*)$', re.MULTILINE)
+ROLE_RE = re.compile(':flake8-(?P<role>\S*):\s(?P<value>.*)$', re.MULTILINE)
+
+DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s|ok(except|warning))')]
+DEFAULT_CONSOLE_SYSNTAX = [re.compile(r'^(%\S*\s)')]
+
+IPYTHON_START_RE = re.compile('In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
+IPYTHON_FOLLOW_RE = re.compile(' \.{4}:\s?(?P<code>.*\n)')
 
 
 def _match_default(match, group, default=None):
@@ -19,7 +25,7 @@ def _extract_roles(match):
     if not role_block:
         return roles
     for match in ROLE_RE.finditer(role_block):
-        roles[match.group(1)] = match.group(2)
+        roles[match.group('role')] = match.group('value')
     return roles
 
 
@@ -36,46 +42,51 @@ class SourceBlock(object):
 
     @classmethod
     def merge(cls, *source_blocks):
-        """Merge multiple SourceBlocks together
+        """Merge multiple SourceBlocks together"""
 
-        :type source_blocks: SourceBlock
-        """
         if len(source_blocks) == 1:
             return source_blocks[0]
         main_block = source_blocks[0]
-        boot_lines = main_block._boot_lines
-        code_lines = []
+        boot_lines = main_block.boot_lines
+        source_lines = []
         for source_block in source_blocks:
-            if boot_lines != source_block._boot_lines:
-                raise AssertionError('You cannot merge SourceBlocks with different bootstraps!')
-            code_lines.extend(source_block._code_lines)
-        code_lines.sort(key=lambda line: line[LINENO])
-        return cls(boot_lines, code_lines, main_block.directive, main_block.language)
+            if boot_lines != source_block.boot_lines:
+                raise ValueError('You cannot merge SourceBlocks with different bootstraps!')
+            source_lines.extend(source_block.source_lines)
+        source_lines.sort(key=lambda line: line[LINENO])
+        return cls(boot_lines, source_lines, main_block.directive, main_block.language)
 
-    def __init__(self, boot_lines, code_lines, directive='', language='', roles=None):
+    def __init__(self, boot_lines, source_lines, directive='', language='', roles=None):
         self._boot_lines = boot_lines
-        self._code_lines = code_lines
+        self._source_lines = source_lines
         self.directive = directive
         self.language = language
         self.roles = roles or {}
-        self.ignore_lines_with = [re.compile(r'^@(savefig\s|ok(except|warning))')]
-        self.console_syntax = [re.compile(r'^(%\S*\s)')]
+        self.ignore_lines_with = DEFAULT_IGNORED_LINES
+        self.console_syntax = DEFAULT_CONSOLE_SYSNTAX
 
-        if directive == 'ipython' and 'group' not in self.roles:
-            self.roles['group'] = 'ipython'
+        self.roles.setdefault('group', 'None' if directive != 'ipython' else directive)
+
+    @property
+    def boot_lines(self):
+        return self._boot_lines
+
+    @property
+    def source_lines(self):
+        return self._source_lines
 
     @property
     def source_block(self):
         """Return code lines **without** bootstrap"""
-        return "".join((line[SOURCE] for line in self._code_lines))
+        return "".join((line[SOURCE] for line in self._source_lines))
 
     @property
     def complete_block(self):
         """Return code lines **with** bootstrap"""
-        return "".join([line[SOURCE] for line in self._boot_lines + self._code_lines])
+        return "".join([line[SOURCE] for line in self._boot_lines + self._source_lines])
 
     def get_code_line(self, lineno):
-        all_lines = self._boot_lines + self._code_lines
+        all_lines = self._boot_lines + self._source_lines
         line = all_lines[lineno - 1]
         return {'lineno': line[LINENO], 'indent': len(line[RAW]) - len(line[SOURCE]),
                 'source': line[SOURCE], 'raw_source': line[RAW]}
@@ -86,95 +97,96 @@ class SourceBlock(object):
         for match in expression.finditer(src):
             origin_code = str(match.group('code'))
             line_start = src[:match.start()].count('\n') + match.group('before').count('\n')
-            code_slice = slice(line_start, line_start + len(origin_code.splitlines(True)))
+            source_slice = slice(line_start, line_start + len(origin_code.splitlines(True)))
             directive = _match_default(match, 'directive', '')
             language = _match_default(match, 'language', '')
             roles = _extract_roles(match)
-            yield SourceBlock(self._boot_lines, self._code_lines[code_slice],
-                              directive=directive, language=language, roles=roles)._remove_indentation()
+
+            source_block = SourceBlock(self._boot_lines, self._source_lines[source_slice], directive=directive,
+                                       language=language, roles=roles)
+            source_block._remove_indentation()
+            yield source_block
 
     def _remove_indentation(self):
         expression = re.compile('(?P<indent>^ *).', re.MULTILINE)
         indentation = min(expression.findall(self.source_block))
         if indentation:
             indent = len(indentation)
-            code_lines = [(line[LINENO], line[SOURCE][indent:-1] + line[SOURCE][-1], line[RAW]) for line in
-                          self._code_lines]
-            self._code_lines = code_lines
-        return self
+            source_lines = [(line[LINENO], line[SOURCE][indent:-1] + line[SOURCE][-1], line[RAW])
+                            for line in self._source_lines]
+            self._source_lines = source_lines
 
     def clean(self):
         for func in (self.clean_doctest, self.clean_ipython):
-            code_lines = func()
-            if code_lines:
-                self._code_lines = code_lines
+            source_lines = func()
+            if source_lines:
+                self._source_lines = source_lines
                 break
 
         if self.directive == 'ipython' and self.language == 'python':
-            self._code_lines = self.clean_console()
+            self._source_lines = self.clean_console()
 
     def clean_doctest(self):
         try:
             lines = doctest.DocTestParser().get_examples(self.source_block)
         except ValueError:
             return None
-        code_lines = []
+        source_lines = []
         for line in lines:
             if self._should_ignore(line.source):
                 continue
             src = self._remove_console_syntax(line.source)
             for i, source in enumerate(src.splitlines(True)):
-                lineno, _, raw_code = self._code_lines[line.lineno + i]
-                assert source in raw_code
-                code_lines.append((lineno, source, raw_code))
+                lineno, _, raw = self._source_lines[line.lineno + i]
+                if source not in raw:
+                    raise AssertionError
+                source_lines.append((lineno, source, raw))
 
-        return code_lines
+        return source_lines
 
     def clean_ipython(self):
-        start_re = re.compile('In \[(\d+)\]:\s?(.*\n)')
-        follow_re = re.compile(' \.{4}:\s?(.*\n)')
         code_lines = []
         follow = 0
-        for line in self._code_lines:
-            match = start_re.match(line[SOURCE])
-            if match and not self._should_ignore(match.group(2)):
-                follow = len(match.group(1))
-                src = self._remove_console_syntax(match.group(2))
+        for line in self._source_lines:
+            match = IPYTHON_START_RE.match(line[SOURCE])
+            if match and not self._should_ignore(match.group('code')):
+                follow = len(match.group('lineno'))
+                src = self._remove_console_syntax(match.group('code'))
                 code_lines.append((line[LINENO], src, line[RAW]))
                 continue
             if not follow:
                 continue
-            match = follow_re.match(line[SOURCE][follow:])
+            match = IPYTHON_FOLLOW_RE.match(line[SOURCE][follow:])
             if match:
-                code_lines.append((line[LINENO], match.group(1), line[RAW]))
+                code_lines.append((line[LINENO], match.group('code'), line[RAW]))
                 continue
             follow = 0
 
         return code_lines
 
-    def _should_ignore(self, code_line):
+    def _should_ignore(self, source_line):
         for pattern in self.ignore_lines_with:
-            if re.compile(pattern).match(code_line):
+            if pattern.match(source_line):
                 return True
         return False
 
-    def _remove_console_syntax(self, code_line):
+    def _remove_console_syntax(self, source_line):
         for pattern in self.console_syntax:
-            match = re.compile(pattern).match(code_line)
+            match = pattern.match(source_line)
             if match:
-                return code_line.replace(match.group(1), '')
-        return code_line
+                return source_line.replace(match.group(1), '')
+        return source_line
 
     def clean_console(self):
-        code_lines = []
-        for code_line in self._code_lines:
-            source = code_line[SOURCE]
+        source_lines = []
+        for source_line in self._source_lines:
+            source = source_line[SOURCE]
             if self._should_ignore(source):
                 continue
             src = self._remove_console_syntax(source)
             if src == source:
-                code_lines.append(code_line)
+                source_lines.append(source_line)
             else:
-                code_lines.append((code_line[LINENO], src, code_line[RAW]))
+                source_lines.append((source_line[LINENO], src, source_line[RAW]))
 
-        return code_lines
+        return source_lines

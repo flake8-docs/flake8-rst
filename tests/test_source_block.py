@@ -80,8 +80,9 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
 
 @pytest.mark.parametrize("src, expected", [
     (".. ipython:: python\n\n   code-line\n", {'group': 'ipython'}),
-    (".. ipython:: python\n   :flake8-group: code-block\n\n   code-line\n", {'group': 'code-block'}),
-    (".. code-block:: python\n\n   code-line\n", {}),
+    (".. ipython:: python\n   :flake8-group: None\n\n   code-line\n", {'group': 'None'}),
+    (".. ipython:: python\n   :flake8-group: Anything\n\n   code-line\n", {'group': 'Anything'}),
+    (".. code-block:: python\n\n   code-line\n", {'group': 'None'}),
     (".. code-block:: python\n   :flake8-group: test-123\n\n   code-line\n", {'group': 'test-123'}),
 ])
 def test_get_roles(src, expected):
