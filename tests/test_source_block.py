@@ -79,11 +79,13 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
 
 
 @pytest.mark.parametrize("src, expected", [
-    (".. ipython:: python\n\n   code-line\n", {'group': 'ipython'}),
-    (".. ipython:: python\n   :flake8-group: None\n\n   code-line\n", {'group': 'None'}),
-    (".. ipython:: python\n   :flake8-group: Anything\n\n   code-line\n", {'group': 'Anything'}),
+    (".. ipython:: python\n\n   code-line\n", {'group': 'ipython', 'add-ignore': 'E302, E305'}),
+    (".. ipython:: python\n   :flake8-group: None\n   :flake8-add-ignore: C404\n\n   code-line\n",
+     {'group': 'None', 'add-ignore': 'C404, E302, E305'}),
+    (".. ipython:: python\n   :flake8-group: Anything\n\n   code-line\n",
+     {'group': 'Anything', 'add-ignore': 'E302, E305'}),
     (".. ipython:: python\n   :flake8-group: Anything\n   :flake8-bootstrap: import something\n\n   code-line\n",
-     {'bootstrap': 'import something', 'group': 'Anything'}),
+     {'bootstrap': 'import something', 'group': 'Anything', 'add-ignore': 'E302, E305'}),
     (".. code-block:: python\n\n   code-line\n", {'group': 'None'}),
     (".. code-block:: python\n   :flake8-group: test-123\n\n   code-line\n", {'group': 'test-123'}),
     (".. code-block:: python\n   :flake8-bootstrap: import numpy as np; import pandas as pd\n\n   code-line\n",

@@ -75,6 +75,13 @@ class SourceBlock(object):
         self.console_syntax = DEFAULT_CONSOLE_SYSNTAX
 
         self.roles.setdefault('group', 'None' if directive != 'ipython' else directive)
+        if directive == "ipython":
+            previous = self.roles.setdefault('add-ignore', '')
+            if previous:
+                self.roles['add-ignore'] += ', ' + 'E302, E305'
+            else:
+                self.roles['add-ignore'] = 'E302, E305'
+
         if 'bootstrap' in self.roles:
             self._boot_lines = SourceBlock.convert_bootstrap(self.roles['bootstrap'], split='; ')
 

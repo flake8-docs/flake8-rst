@@ -86,7 +86,7 @@ def inject_options(roles, options):
 
         if 'add-' + key in roles:
             values = {value.strip() for value in roles['add-' + key].split(',')}
-            values.update(options.__dict__[key])
+            values.update(new_options.__dict__[key])
             setattr(new_options, key, list(values))
 
     return new_options
