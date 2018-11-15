@@ -3,15 +3,15 @@ import re
 
 LINENO, SOURCE, RAW = range(3)
 
-ROLE_RE = re.compile(':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
+ROLE_RE = re.compile(r':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
-INDENT_RE = re.compile('(?P<indent>^ *).', re.MULTILINE)
+INDENT_RE = re.compile(r'(?P<indent>^ *).', re.MULTILINE)
 
 DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s|ok(except|warning))')]
 DEFAULT_CONSOLE_SYSNTAX = [re.compile(r'^(%\S*\s)')]
 
-IPYTHON_START_RE = re.compile('In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
-IPYTHON_FOLLOW_RE = re.compile('^\.{3}:\s?(?P<code>.*\n)')
+IPYTHON_START_RE = re.compile(r'In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
+IPYTHON_FOLLOW_RE = re.compile(r'^\.{3}:\s?(?P<code>.*\n)')
 
 ROLES = ['group', 'bootstrap']
 
@@ -49,20 +49,21 @@ class SourceBlock(object):
         return [(0, line + '\n', line + '\n') for line in bootstrap.split(split)]
 
     @classmethod
-    def merge(cls, *source_blocks):
+    def merge(cls, source_blocks):
         """Merge multiple SourceBlocks together"""
 
         if len(source_blocks) == 1:
             return source_blocks[0]
+
+        source_blocks.sort(key=lambda block: block.start_line_number)
         main_block = source_blocks[0]
         boot_lines = main_block.boot_lines
         source_lines = []
         for source_block in source_blocks:
-            if boot_lines != source_block.boot_lines:
-                raise ValueError('You cannot merge SourceBlocks with different bootstraps!')
             source_lines.extend(source_block.source_lines)
-        source_lines.sort(key=lambda line: line[LINENO])
-        return cls(boot_lines, source_lines, main_block.directive, main_block.language)
+
+        return cls(boot_lines, source_lines, directive=main_block.directive,
+                   language=main_block.language, roles=main_block.roles)
 
     def __init__(self, boot_lines, source_lines, directive='', language='', roles=None):
         self._boot_lines = boot_lines
@@ -75,7 +76,6 @@ class SourceBlock(object):
 
         self.roles.setdefault('group', 'None' if directive != 'ipython' else directive)
         if 'bootstrap' in self.roles:
-            self.roles['group'] = 'None'
             self._boot_lines = SourceBlock.convert_bootstrap(self.roles['bootstrap'], split='; ')
 
     @property
@@ -95,6 +95,10 @@ class SourceBlock(object):
     def complete_block(self):
         """Return code lines **with** bootstrap"""
         return "".join([line[SOURCE] for line in self._boot_lines + self._source_lines])
+
+    @property
+    def start_line_number(self):
+        return self._source_lines[0][LINENO]
 
     def get_code_line(self, lineno):
         all_lines = self._boot_lines + self._source_lines

@@ -71,8 +71,8 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
     block2 = SourceBlock.from_source(bootstrap, src_2, len(src_1.splitlines()) + 1)
     expected = SourceBlock.from_source(bootstrap, src_1 + src_2)
 
-    merged = SourceBlock.merge(block1, block2)
-    reversed_merged = SourceBlock.merge(block2, block1)
+    merged = SourceBlock.merge([block1, block2])
+    reversed_merged = SourceBlock.merge([block1, block2])
 
     assert expected.complete_block == merged.complete_block
     assert expected.complete_block == reversed_merged.complete_block
@@ -83,7 +83,7 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
     (".. ipython:: python\n   :flake8-group: None\n\n   code-line\n", {'group': 'None'}),
     (".. ipython:: python\n   :flake8-group: Anything\n\n   code-line\n", {'group': 'Anything'}),
     (".. ipython:: python\n   :flake8-group: Anything\n   :flake8-bootstrap: import something\n\n   code-line\n",
-     {'bootstrap': 'import something', 'group': 'None'}),
+     {'bootstrap': 'import something', 'group': 'Anything'}),
     (".. code-block:: python\n\n   code-line\n", {'group': 'None'}),
     (".. code-block:: python\n   :flake8-group: test-123\n\n   code-line\n", {'group': 'test-123'}),
     (".. code-block:: python\n   :flake8-bootstrap: import numpy as np; import pandas as pd\n\n   code-line\n",

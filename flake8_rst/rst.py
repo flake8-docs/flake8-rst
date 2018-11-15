@@ -32,7 +32,7 @@ def merge_by_group(func):
             else:
                 yield block
         for merge_blocks in blocks.values():
-            yield SourceBlock.merge(*merge_blocks)
+            yield SourceBlock.merge(merge_blocks)
 
     return func_wrapper
 
