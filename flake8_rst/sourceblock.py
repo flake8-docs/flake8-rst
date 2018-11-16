@@ -1,3 +1,4 @@
+import operator
 import doctest
 import re
 
@@ -55,7 +56,7 @@ class SourceBlock(object):
         if len(source_blocks) == 1:
             return source_blocks[0]
 
-        source_blocks.sort(key=lambda block: block.start_line_number)
+        source_blocks.sort(key=operator.attrgetter('start_line_number'))
         main_block = source_blocks[0]
         boot_lines = main_block.boot_lines
         source_lines = []
