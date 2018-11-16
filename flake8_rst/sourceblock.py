@@ -35,7 +35,6 @@ def _extract_roles(match):
 
 
 class SourceBlock(object):
-
     @classmethod
     def from_source(cls, bootstrap, src, start_line=1, **kwargs):
         if bootstrap:
@@ -113,7 +112,6 @@ class SourceBlock(object):
                 'source': line[SOURCE], 'raw_source': line[RAW]}
 
     def find_blocks(self, expression):
-
         src = self.source_block
         for match in expression.finditer(src):
             origin_code = str(match.group('code'))
