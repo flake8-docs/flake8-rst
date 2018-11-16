@@ -18,7 +18,7 @@ Realization inspired by https://github.com/asottile/blacken-docs
 ## Usage
 You can install tool from pip `pip install flake8-rst`.
 
-Tool search `sourcecode` and `code-block` blocks, crop and run flake8 on it:
+Tool search `sourcecode`, `code-block` and `ipython` blocks, crop and run flake8 on it:
 
 ```text
 .. sourcecode:: python
@@ -36,12 +36,115 @@ or
 ```
 
 Supporting all flake8 arguments and flags except jobs (temporary), with additional one:
-```text
+```commandline
 flake8-rst --bootstrap "import test"
 ```
 
 flake8-rst bootstraps code snippets with this code, useful for fix import errors.
 Load configuration from `[flake8-rst]` ini sections, like flake8.
+
+## Advanced Usage
+In order to use custom roles of `flake8-rst` in documentation with `Sphinx`, extend sphinx with `flake8_rst.sphinxext.custom_roles` in `conf.py`.
+The roles have no effect on the generated documentation.
+
+```python
+extensions = [...,
+              'flake8_rst.sphinxext.custom_roles'
+              ]
+```
+
+| role                  |                                                  | example                                    | 
+|-----------------------|--------------------------------------------------|--------------------------------------------|
+| `:flake8-group:`      | Blocks with same group are combined to one.      | `:flake8-group: Group1`                    |
+|                       | Blocks with group `None` are checked individual. | `:flake8-group: None`                      |
+| `:flake8-set-ignore:` | Overwrites ignore list for current block.        | `:flake8-set-ignore: F821, E999`           |
+| `:flake8-add-ignore:` | Adds arguments to ignore list for current block. | `:flake8-add-ignore: E999`                 |
+| `:flake8-set-select:` | Overwrites select list for current block.        | `:flake8-set-select: E, F`                 |
+| `:flake8-add-select:` | Adds arguments to select list for current block. | `:flake8-add-select: C404`                 |
+| `:flake8-bootstrap:`  | Overwrites `--bootstrap` for current block       | `:flake8-bootstrap: import os; import sys` |
+
+Keep in mind: 
+ * The default group is `None` for `sourcecode` and `code-block` directives and `ipython` for `ipython` directive.
+    * So if not otherwise specified, code within `ipython` blocks is combined before passing to `flake8`.
+    * Adding `:flake8-group: None` to a `ipython` block makes it beeing checked individual.
+    * Adding `:flake8-group: ipython` to a `code-block` block integrates the code to the `ipython` blocks for the check.
+ * Roles added to blocks within the same group (except group `None`) have no effect unless they appear in the first block.
+ * provided bootstrap-code will get split by `; ` into individual lines.
+
+------------------------------------------------------------------------------------------------------------------------
+
+Disconnected blocks don't know previous defined names:
+ 
+```pydocstring
+.. code-block:: python
+
+    class Example(Base):
+        pass
+
+.. code-block:: python
+    
+    import datetime
+    
+    obj = Example(datetime.datetime.now())            # F821 undefined name 'Example'
+    
+```
+
+Once blocks are connected, different issues are found:
+
+```pydocstring
+.. code-block:: python
+    :flake8-group: ExampleGroup
+    
+    class Example(Base):
+        pass
+
+.. code-block:: python
+    :flake8-group: ExampleGroup
+    
+    import datetime                                   # E402 module level import not at top of file
+    
+    obj = Example(datetime.datetime.now())
+    
+```
+
+If appropriate, issues can be ignored for a specific group:
+
+```pydocstring
+
+
+.. code-block:: python
+    :flake8-group: ExampleGroup1
+    :flake8-set-ignore: E402
+    
+    class Example(Base):
+        pass
+
+.. code-block:: python
+    :flake8-group: ExampleGroup1
+    
+    import datetime
+    
+    obj = Example(datetime.datetime.now())
+
+
+
+.. code-block:: python
+    :flake8-group: ExampleGroup2
+    
+    class Example(Base):
+        pass
+
+.. code-block:: python
+    :flake8-group: ExampleGroup2
+    :flake8-set-ignore: E402                          # no effect, because it's not defined in first 
+                                                      # block of ExampleGroup2 
+        
+    import datetime                                   # E402 module level import not at top of file
+    
+    obj = Example(datetime.datetime.now())
+    
+    
+```
 
 ## Example
 
