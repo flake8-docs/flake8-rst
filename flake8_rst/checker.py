@@ -7,7 +7,7 @@ from flake8.checker import FileChecker, Manager, LOG
 from flake8.processor import FileProcessor
 from flake8.style_guide import DecisionEngine
 
-from flake8_rst.rst import find_sourcecode
+from .rst import find_sourcecode
 
 ROLES = ['set-ignore', 'set-select', 'add-ignore', 'add-select']
 

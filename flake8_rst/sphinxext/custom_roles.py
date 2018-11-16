@@ -1,8 +1,8 @@
 from docutils.parsers.rst import directives
 from sphinx.directives.code import CodeBlock
 
-from flake8_rst.sourceblock import ROLES as SOURCEBLOCK_ROLES
-from flake8_rst.checker import ROLES as CHECKER_ROLES
+from ..sourceblock import ROLES as SOURCEBLOCK_ROLES
+from ..checker import ROLES as CHECKER_ROLES
 
 try:
     from IPython.sphinxext.ipython_directive import IPythonDirective

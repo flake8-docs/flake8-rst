@@ -1,7 +1,7 @@
 import re
 from functools import wraps
 
-from flake8_rst.sourceblock import SourceBlock
+from .sourceblock import SourceBlock
 
 RST_RE = re.compile(
     r'(?P<before>'
