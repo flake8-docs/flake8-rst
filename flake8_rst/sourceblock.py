@@ -59,9 +59,7 @@ class SourceBlock(object):
         source_blocks.sort(key=operator.attrgetter('start_line_number'))
         main_block = source_blocks[0]
         boot_lines = main_block.boot_lines
-        source_lines = []
-        for source_block in source_blocks:
-            source_lines.extend(source_block.source_lines)
+        source_lines = [source_line for source_block in source_blocks for source_line in source_block.source_lines]
 
         return cls(boot_lines, source_lines, directive=main_block.directive,
                    language=main_block.language, roles=main_block.roles)
@@ -97,12 +95,12 @@ class SourceBlock(object):
     @property
     def source_block(self):
         """Return code lines **without** bootstrap"""
-        return "".join((line[SOURCE] for line in self._source_lines))
+        return "".join(line[SOURCE] for line in self._source_lines)
 
     @property
     def complete_block(self):
         """Return code lines **with** bootstrap"""
-        return "".join([line[SOURCE] for line in self._boot_lines + self._source_lines])
+        return "".join(line[SOURCE] for line in self._boot_lines + self._source_lines)
 
     @property
     def start_line_number(self):
