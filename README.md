@@ -44,6 +44,10 @@ flake8-rst bootstraps code snippets with this code, useful for fix import errors
 Load configuration from `[flake8-rst]` ini sections, like flake8.
 
 ## Advanced Usage
+
+Custom Roles
+------------
+
 In order to use custom roles of `flake8-rst` in documentation with `Sphinx`, extend sphinx with `flake8_rst.sphinxext.custom_roles` in `conf.py`.
 The roles have no effect on the generated documentation.
 
@@ -64,18 +68,35 @@ extensions = [...,
 | `:flake8-bootstrap:`  | Overwrites `--bootstrap` for current block       | `:flake8-bootstrap: import os; import sys` |
 
 Keep in mind: 
- * The default group is `None` for `sourcecode` and `code-block` directives and `ipython` for `ipython` directive.
-    * So if not otherwise specified, code within `ipython` blocks is combined before passing to `flake8`.
-    * Adding `:flake8-group: None` to a `ipython` block makes it beeing checked individual.
-    * Adding `:flake8-group: ipython` to a `code-block` block integrates the code to the `ipython` blocks for the check.
- * Roles added to blocks within the same group (except group `None`) have no effect unless they appear in the first block.
- * provided bootstrap-code will get split by `; ` into individual lines.
+* Roles added to blocks within the same group (except group `None`) have no effect unless they appear in the first block.
+* provided bootstrap-code will get split by `; ` into individual lines.
+
+Default block naming
+--------------------
+
+```commandline
+flake8-rst --default-groupnames "{'rst': {'all': 'default'}}"
+```
+
+You can specify default groupnames for all directives individually by passing a dictionary.
+
+```commandline
+flake8-rst --default-groupnames "{'<file_ext>: {'<directive>': '<groupname>'}'}"
+```
+
+The keyword `all` as a directive sets the default groupname if not otherwise specified. 
+
+The default is `"{'rst': {'all': 'default'}}"`, so all blocks in `*.rst` files are merged, in 
+other files they stay individual.
+
+But it's also possible to merge only `ipython` directives in `*.rst` files and leave other directives 
+treated individually: `"{'rst': {'ipython': 'default'}}"`
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Disconnected blocks don't know previous defined names:
  
-```pydocstring
+```text
 .. code-block:: python
 
     class Example(Base):
@@ -91,7 +112,7 @@ Disconnected blocks don't know previous defined names:
 
 Once blocks are connected, different issues are found:
 
-```pydocstring
+```text
 .. code-block:: python
     :flake8-group: ExampleGroup
     
@@ -109,7 +130,7 @@ Once blocks are connected, different issues are found:
 
 If appropriate, issues can be ignored for a specific group:
 
-```pydocstring
+```text
 
 
 .. code-block:: python

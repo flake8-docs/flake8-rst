@@ -17,6 +17,10 @@ class Application(Flake8Application):
             '--bootstrap', default=None, parse_from_config=True,
             help='Bootstrap code snippets. Useful for add imports.',
         )
+        self.option_manager.add_option(
+            '--default-groupnames', default=None, parse_from_config=True,
+            help='Set default group names.',
+        )
         options.register_default_options(self.option_manager)
 
     def make_file_checker_manager(self):

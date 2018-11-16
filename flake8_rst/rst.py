@@ -1,3 +1,4 @@
+import ast
 import re
 from functools import wraps
 
@@ -21,6 +22,7 @@ DOCSTRING_RE = re.compile(
 
 
 def merge_by_group(func):
+
     @wraps(func)
     def func_wrapper(*args, **kwargs):
         blocks = {}
@@ -37,10 +39,51 @@ def merge_by_group(func):
     return func_wrapper
 
 
+def apply_directive_specific_options(func):
+    @wraps(func)
+    def func_wrapper(*args, **kwargs):
+        for block in func(*args, **kwargs):
+            if block.directive == "ipython":
+                previous = block.roles.setdefault('add-ignore', '')
+                if previous:
+                    block.roles['add-ignore'] += ', ' + 'E302, E305'
+                else:
+                    block.roles['add-ignore'] = 'E302, E305'
+            yield block
+
+    return func_wrapper
+
+
+def apply_default_groupnames(func):
+    def get_groupname(block, default_groupnames, file_ext):
+        if file_ext in default_groupnames:
+            groupnames = default_groupnames[file_ext]
+            if block.directive in groupnames:
+                return groupnames[block.directive]
+            elif 'all' in groupnames:
+                return groupnames['all']
+
+        return 'None'
+
+    @wraps(func)
+    def func_wrapper(*args, **kwargs):
+        file_ext = args[0].split('.')[-1]
+        default_groups = args[1].default_groupnames or "{'rst': {'all': 'default'}}"
+        default_groupnames = ast.literal_eval(default_groups)
+
+        for block in func(*args, **kwargs):
+            block.roles.setdefault('group', get_groupname(block, default_groupnames, file_ext))
+            yield block
+
+    return func_wrapper
+
+
+@apply_directive_specific_options
 @merge_by_group
-def find_sourcecode(filename, bootstrap, src):
+@apply_default_groupnames
+def find_sourcecode(filename, options, src):
     contains_python_code = filename.split('.')[-1].startswith('py')
-    source = SourceBlock.from_source(bootstrap, src)
+    source = SourceBlock.from_source(options.bootstrap, src)
     source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else [source]
 
     for source_block in source_blocks:
