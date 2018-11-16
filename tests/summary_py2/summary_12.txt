@@ -1,0 +1,18 @@
+./data/example_12.rst:13:5: E402 module level import not at top of file
+    import matplotlib.pyplot as plt
+    ^
+./data/example_12.rst:16:27: E702 multiple statements on one line (semicolon)
+    plt.plot([1, 2, 3, 4]); plt.ylabel('some numbers');
+                          ^
+./data/example_12.rst:16:55: E703 statement ends with a semicolon
+    plt.plot([1, 2, 3, 4]); plt.ylabel('some numbers');
+                                                      ^
+./data/example_12.rst:22:5: E402 module level import not at top of file
+    import numpy as np
+    ^
+./data/example_12.rst:25:5: F821 undefined name 'hist'
+    hist(np.random.randn(10000), 100)
+    ^
+./data/example_12.rst:6:83: E501 line too long (82 > 79 characters)
+   sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+                                                                                  ^

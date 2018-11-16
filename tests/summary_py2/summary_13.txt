@@ -1,0 +1,21 @@
+./data/example_13.rst:5:11: F821 undefined name 'LdaModel'
+>>> lda = LdaModel(corpus=mm, id2word=id2word,
+          ^
+./data/example_13.rst:5:27: F821 undefined name 'mm'
+>>> lda = LdaModel(corpus=mm, id2word=id2word,
+                          ^
+./data/example_13.rst:5:39: F821 undefined name 'id2word'
+>>> lda = LdaModel(corpus=mm, id2word=id2word,
+                                      ^
+./data/example_13.rst:6:48: F821 undefined name 'distribution_required'
+...                num_topics=100, distributed=distribution_required)
+                                               ^
+./data/example_13.rst:9:11: F821 undefined name 'LdbModel'
+>>> ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)
+          ^
+./data/example_13.rst:9:27: F821 undefined name 'mm'
+>>> ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)
+                          ^
+./data/example_13.rst:9:39: F821 undefined name 'id2word'
+>>> ldb = LdbModel(corpus=mm, id2word=id2word, num_topics=100, distributed=True)
+                                      ^
