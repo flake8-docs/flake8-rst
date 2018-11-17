@@ -80,12 +80,11 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
 
 
 @pytest.mark.parametrize("filename, directive, roles, default_groupnames, expected", [
-    ('*.rst', 'code-block', {}, None, {'group': 'default'}),
-    ('*.py', 'code-block', {}, None, {'group': 'None'}),
-    ('*.rst', 'code-block', {}, {'rst': {'ipython': 'ipython', '*': 'code-block'}}, {'group': 'code-block'}),
-    ('*.rst', 'ipython', {}, {'*': {'ipython': 'ipython', 'code-block': 'code-block'}}, {'group': 'ipython'}),
-    ('*.py', 'code-block', {}, {'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}, {'group': 'None'}),
-    ('*.py', 'ipython', {}, {'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}, {'group': 'None'}),
+    ('test.rst', 'code-block', {}, "*.rst->*: default", {'group': 'default'}),
+    ('test.py', 'code-block', {}, "*.rst->*: default", {'group': 'None'}),
+    ('test.rst', 'code-block', {}, "*->code-block: code-block, *->ipython: ipython", {'group': 'code-block'}),
+    ('test.rst', 'ipython', {}, "*->code-block: code-block, *->ipython: ipython", {'group': 'ipython'}),
+    ('test.py', 'code-block', {}, "last.py->code-block: code-block, *.rst->ipython: ipython", {'group': 'None'}),
 ])
 def test_default_groupname(filename, directive, roles, default_groupnames, expected):
     func = apply_default_groupnames(lambda *a, **k: [SourceBlock([], [], directive=directive, roles=roles)])

@@ -1,10 +1,10 @@
-import ast
-import collections
 import re
 from fnmatch import fnmatch
 from functools import wraps
 
 from .sourceblock import SourceBlock
+
+COMMENT_RE = re.compile(r'(#.*$)', re.MULTILINE)
 
 RST_RE = re.compile(
     r'(?P<before>'
@@ -57,19 +57,21 @@ def apply_directive_specific_options(func):
 
 
 def apply_default_groupnames(func):
-    def resolve_mapping(mapping, pattern, default):
-        for key, values in mapping.items():
-            if fnmatch(pattern, key):
-                return values
-        return default
+    def resolve_mapping(mappings, pattern, split):
+        for entry in mappings:
+            key, values = entry.split(split, 1)
+            if fnmatch(pattern, key.strip()):
+                yield values.strip()
 
     @wraps(func)
     def func_wrapper(filename, options, *args, **kwargs):
-        file_ext = filename.split('.')[-1]
-        default_groupnames = options.default_groupnames or {'rst': {'*': 'default'}}
-        groupnames = resolve_mapping(default_groupnames, file_ext, collections.defaultdict())
+        default_groupnames = re.sub(COMMENT_RE, '', options.default_groupnames)
+        lines = default_groupnames.split(',' if ',' in default_groupnames else '\n')
+        groupnames = list(resolve_mapping(lines, filename, '->'))
+
         for block in func(filename, options, *args, **kwargs):
-            block.roles.setdefault('group', resolve_mapping(groupnames, block.directive, 'None'))
+            groupname = next(resolve_mapping(groupnames, block.directive, ':'), 'None')
+            block.roles.setdefault('group', groupname)
             yield block
 
     return func_wrapper
