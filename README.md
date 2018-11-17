@@ -73,24 +73,32 @@ Keep in mind:
 
 Default block naming
 --------------------
+You can specify default groupnames for all directives individually:
 
 ```commandline
-flake8-rst --default-groupnames "{'rst': {'all': 'default'}}"
+flake8-rst --default-groupnames '<file_ext>-<directive>: <groupname>'
 ```
 
-You can specify default groupnames for all directives individually by passing a dictionary.
+`file_ext` and `directive` are matched by `Unix filename pattern matching` in the order of appearance.
 
-```commandline
-flake8-rst --default-groupnames "{'<file_ext>: {'<directive>': '<groupname>'}'}"
-```
-
-The keyword `all` as a directive sets the default groupname if not otherwise specified. 
-
-The default is `"{'rst': {'all': 'default'}}"`, so all blocks in `*.rst` files are merged, in 
+The default is `rst-*: default`, so all blocks in `*.rst` files are merged, in 
 other files they stay individual.
 
 But it's also possible to merge only `ipython` directives in `*.rst` files and leave other directives 
-treated individually: `"{'rst': {'ipython': 'default'}}"`
+treated individually: `"rst-ipython: default"`
+
+Examples:
+
+```commandline
+flake8-rst --default-groupnames "rst-*: default"
+```
+
+```yaml
+[flake8-rst]
+default-groupnames =
+    rst-*: default
+    py*-code-block: default
+```
 
 ------------------------------------------------------------------------------------------------------------------------
 

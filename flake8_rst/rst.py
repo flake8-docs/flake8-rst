@@ -1,5 +1,7 @@
 import ast
+import collections
 import re
+from fnmatch import fnmatch
 from functools import wraps
 
 from .sourceblock import SourceBlock
@@ -55,24 +57,19 @@ def apply_directive_specific_options(func):
 
 
 def apply_default_groupnames(func):
-    def get_groupname(block, default_groupnames, file_ext):
-        if file_ext in default_groupnames:
-            groupnames = default_groupnames[file_ext]
-            if block.directive in groupnames:
-                return groupnames[block.directive]
-            elif 'all' in groupnames:
-                return groupnames['all']
-
-        return 'None'
+    def resolve_mapping(mapping, pattern, default):
+        for key, values in mapping.items():
+            if fnmatch(pattern, key):
+                return values
+        return default
 
     @wraps(func)
-    def func_wrapper(*args, **kwargs):
-        file_ext = args[0].split('.')[-1]
-        default_groups = args[1].default_groupnames or "{'rst': {'all': 'default'}}"
-        default_groupnames = ast.literal_eval(default_groups)
-
-        for block in func(*args, **kwargs):
-            block.roles.setdefault('group', get_groupname(block, default_groupnames, file_ext))
+    def func_wrapper(filename, options, *args, **kwargs):
+        file_ext = filename.split('.')[-1]
+        default_groupnames = options.default_groupnames or {'rst': {'*': 'default'}}
+        groupnames = resolve_mapping(default_groupnames, file_ext, collections.defaultdict())
+        for block in func(filename, options, *args, **kwargs):
+            block.roles.setdefault('group', resolve_mapping(groupnames, block.directive, 'None'))
             yield block
 
     return func_wrapper

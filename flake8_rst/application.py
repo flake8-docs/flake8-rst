@@ -1,9 +1,28 @@
+import re
+from collections import OrderedDict
 from flake8.main import options
 from flake8.main.application import Application as Flake8Application
 from flake8.options import manager
 
 from . import __version__
 from . import checker
+
+COMMENT_RE = re.compile(r'(#.*$)', re.MULTILINE)
+
+
+def convert_default_groupnames(value):
+    groupnames = OrderedDict()
+
+    for entry in re.sub(COMMENT_RE, '', value).split(',' if ',' in value else '\n'):
+        if not entry:
+            continue
+        file_ext, assignment = entry.split('-', 1)
+        directive, groupname = assignment.split(':', 1)
+
+        data = groupnames.setdefault(file_ext.strip(), OrderedDict())
+        data[directive.strip()] = groupname.strip()
+
+    return groupnames
 
 
 class Application(Flake8Application):
@@ -18,8 +37,8 @@ class Application(Flake8Application):
             help='Bootstrap code snippets. Useful for add imports.',
         )
         self.option_manager.add_option(
-            '--default-groupnames', default=None, parse_from_config=True,
-            help='Set default group names.',
+            '--default-groupnames', default="rst-*: default", parse_from_config=True,
+            help='Set default group names.', type='string',
         )
         options.register_default_options(self.option_manager)
 
@@ -30,3 +49,7 @@ class Application(Flake8Application):
                 arguments=self.args,
                 checker_plugins=self.check_plugins,
             )
+
+    def parse_configuration_and_cli(self, argv=None):
+        super(Application, self).parse_configuration_and_cli(argv)
+        self.options.default_groupnames = convert_default_groupnames(self.options.default_groupnames)

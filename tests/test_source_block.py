@@ -82,12 +82,12 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
 @pytest.mark.parametrize("filename, directive, roles, default_groupnames, expected", [
     ('*.rst', 'code-block', {}, None, {'group': 'default'}),
     ('*.py', 'code-block', {}, None, {'group': 'None'}),
-    ('*.rst', 'code-block', {}, "{'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}", {'group': 'code-block'}),
-    ('*.rst', 'ipython', {}, "{'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}", {'group': 'ipython'}),
-    ('*.py', 'code-block', {}, "{'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}", {'group': 'None'}),
-    ('*.py', 'ipython', {}, "{'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}", {'group': 'None'}),
+    ('*.rst', 'code-block', {}, {'rst': {'ipython': 'ipython', '*': 'code-block'}}, {'group': 'code-block'}),
+    ('*.rst', 'ipython', {}, {'*': {'ipython': 'ipython', 'code-block': 'code-block'}}, {'group': 'ipython'}),
+    ('*.py', 'code-block', {}, {'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}, {'group': 'None'}),
+    ('*.py', 'ipython', {}, {'rst': {'ipython': 'ipython', 'code-block': 'code-block'}}, {'group': 'None'}),
 ])
-def test_get_roles(filename, directive, roles, default_groupnames, expected):
+def test_default_groupname(filename, directive, roles, default_groupnames, expected):
     func = apply_default_groupnames(lambda *a, **k: [SourceBlock([], [], directive=directive, roles=roles)])
     block = next(func(filename, options=optparse.Values(dict(default_groupnames=default_groupnames))))
 
@@ -99,7 +99,7 @@ def test_get_roles(filename, directive, roles, default_groupnames, expected):
     ('ipython', {}, {'add-ignore': 'E302, E305'}),
     ('ipython', {'add-ignore': 'F'}, {'add-ignore': 'F, E302, E305'}),
 ])
-def test_get_roles(directive, roles, expected):
+def test_directive_specific_options(directive, roles, expected):
     func = apply_directive_specific_options(lambda *a, **k: [SourceBlock([], [], directive=directive, roles=roles)])
     block = next(func())
 
