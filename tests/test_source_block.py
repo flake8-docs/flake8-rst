@@ -66,11 +66,16 @@ def test_clean_doctest():
         assert '>>>' not in origin_code
 
 
-def test_clean_ipython():
-    example = DATA_DIR / 'example_11.rst'
-    src = example.open().read()
-    expected = "name = 'Brian'\nother = brian\n%timeit a = (1, 2,name)  # noqa: F821\n" \
-               "b = (3, 4, other)\nfor i in range(3):\n   print(a[i] is b[i])\n\n"
+@pytest.mark.parametrize('src, expected', [
+    (DATA_DIR / 'example_11.rst', "name = 'Brian'\nother = brian\n%timeit a = (1, 2,name)  # noqa: F821\n"
+                                  "b = (3, 4, other)\nfor i in range(3):\n   print(a[i] is b[i])\n\n"),
+    (".. ipython:: python\n   In [4]: grouped = df.groupby('A')\n\n   In [5]: for name, group in grouped:\n"
+     "      ...:     print(name)\n      ...:     print(group)\n      ...:\n",
+     "grouped = df.groupby('A')\nfor name, group in grouped:\n    print(name)\n    print(group)\n\n")
+])
+def test_clean_ipython(src, expected):
+    if isinstance(src, pathlib.Path):
+        src = src.open().read()
 
     code_block = SourceBlock.from_source('', src)
 

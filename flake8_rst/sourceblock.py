@@ -179,6 +179,8 @@ class SourceBlock(object):
             src = ''
             lineno = follow = None
 
+        source_lines.extend(self._overwritten_source(src, lineno))
+
         if source_lines:
             self._source_lines = source_lines
             return True
