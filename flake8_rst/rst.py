@@ -38,9 +38,9 @@ def merge_by_group(func):
 
 
 @merge_by_group
-def find_sourcecode(filename, bootstrap, src):
+def find_sourcecode(filename, options, src):
     contains_python_code = filename.split('.')[-1].startswith('py')
-    source = SourceBlock.from_source(bootstrap, src)
+    source = SourceBlock.from_source(options.bootstrap, src)
     source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else [source]
 
     for source_block in source_blocks:
