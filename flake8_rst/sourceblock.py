@@ -1,3 +1,5 @@
+import itertools
+
 import operator
 import doctest
 import re
@@ -8,8 +10,8 @@ ROLE_RE = re.compile(r':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
 INDENT_RE = re.compile(r'(?P<indent>^ *).', re.MULTILINE)
 
-DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s|ok(except|warning))')]
-DEFAULT_CONSOLE_SYSNTAX = [re.compile(r'^(%\S*\s)')]
+DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s.*|ok(except|warning))$')]
+DEFAULT_CONSOLE_SYNTAX = [re.compile(r'^(%\S*\s)')]
 
 IPYTHON_START_RE = re.compile(r'In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
 IPYTHON_FOLLOW_RE = re.compile(r'^\.{3}:\s?(?P<code>.*\n)')
@@ -69,16 +71,6 @@ class SourceBlock(object):
         self.directive = directive
         self.language = language
         self.roles = roles or {}
-        self.ignore_lines_with = DEFAULT_IGNORED_LINES
-        self.console_syntax = DEFAULT_CONSOLE_SYSNTAX
-
-        self.roles.setdefault('group', 'None' if directive != 'ipython' else directive)
-        if directive == "ipython":
-            previous = self.roles.setdefault('add-ignore', '')
-            if previous:
-                self.roles['add-ignore'] += ', ' + 'E302, E305'
-            else:
-                self.roles['add-ignore'] = 'E302, E305'
 
         if 'bootstrap' in self.roles:
             self._boot_lines = SourceBlock.convert_bootstrap(self.roles['bootstrap'], split='; ')
@@ -123,10 +115,10 @@ class SourceBlock(object):
 
             source_block = SourceBlock(self._boot_lines, self._source_lines[source_slice], directive=directive,
                                        language=language, roles=roles)
-            source_block._remove_indentation()
+            source_block.remove_indentation()
             yield source_block
 
-    def _remove_indentation(self):
+    def remove_indentation(self):
         indentation = min(INDENT_RE.findall(self.source_block))
         if indentation:
             indent = len(indentation)
@@ -136,75 +128,78 @@ class SourceBlock(object):
 
     def clean(self):
         for func in (self.clean_doctest, self.clean_ipython):
-            source_lines = func()
-            if source_lines:
-                self._source_lines = source_lines
+            if func():
                 break
 
-        if self.directive == 'ipython' and self.language == 'python':
-            self._source_lines = self.clean_console()
+        self.clean_console_syntax()
+        self.clean_ignored_lines()
 
     def clean_doctest(self):
         try:
             lines = doctest.DocTestParser().get_examples(self.source_block)
         except ValueError:
             return None
-        source_lines = []
-        for line in lines:
-            if self._should_ignore(line.source):
-                continue
-            src = self._remove_console_syntax(line.source)
-            for i, source in enumerate(src.splitlines(True)):
-                lineno, _, raw = self._source_lines[line.lineno + i]
-                if source not in raw:
-                    raise AssertionError
-                source_lines.append((lineno, source, raw))
 
-        return source_lines
+        source_lines = [source_line for line in lines
+                        for source_line in self._overwritten_source(line.source, line.lineno)]
+
+        if source_lines:
+            self._source_lines = source_lines
+            return True
+        return False
 
     def clean_ipython(self):
-        code_lines = []
-        follow = 0
-        for line in self._source_lines:
+        source_lines = []
+        src = ''
+        lineno = follow = None
+        for i, line in enumerate(self._source_lines):
             match = IPYTHON_START_RE.match(line[SOURCE])
-            if match and not self._should_ignore(match.group('code')):
+            if match:
+                lineno = i if lineno is None else lineno
                 follow = len(match.group('lineno')) + 2
-                src = self._remove_console_syntax(match.group('code'))
-                code_lines.append((line[LINENO], src, line[RAW]))
+                src += match.group('code')
                 continue
             if not follow:
                 continue
             match = IPYTHON_FOLLOW_RE.match(line[SOURCE][follow:])
             if match:
-                code_lines.append((line[LINENO], match.group('code'), line[RAW]))
+                src += match.group('code')
                 continue
-            follow = 0
 
-        return code_lines
+            source_lines.extend(self._overwritten_source(src, lineno))
 
-    def _should_ignore(self, source_line):
-        for pattern in self.ignore_lines_with:
-            if pattern.match(source_line):
-                return True
+            src = ''
+            lineno = follow = None
+
+        source_lines.extend(self._overwritten_source(src, lineno))
+
+        if source_lines:
+            self._source_lines = source_lines
+            return True
         return False
 
-    def _remove_console_syntax(self, source_line):
-        for pattern in self.console_syntax:
-            match = pattern.match(source_line)
-            if match:
-                return source_line.replace(match.group(1), '')
-        return source_line
+    def _overwritten_source(self, src, start_line=0):
+        for line, (lineno, _, raw) in zip(src.splitlines(True), itertools.islice(self._source_lines, start_line, None)):
+            if line not in raw:
+                raise ValueError
 
-    def clean_console(self):
-        source_lines = []
-        for source_line in self._source_lines:
-            source = source_line[SOURCE]
-            if self._should_ignore(source):
-                continue
-            src = self._remove_console_syntax(source)
-            if src == source:
-                source_lines.append(source_line)
-            else:
-                source_lines.append((source_line[LINENO], src, source_line[RAW]))
+            yield (lineno, line, raw)
 
-        return source_lines
+    def clean_console_syntax(self):
+        indent = None
+        for i, (lineno, source, raw) in enumerate(self._source_lines):
+            for pattern in DEFAULT_CONSOLE_SYNTAX:
+                match = pattern.match(source)
+                if match:
+                    indent = len(match.group(1))
+                    self._source_lines[i] = (lineno, source.replace(match.group(1), ''), raw)
+                elif indent and source.startswith(' ' * indent):
+                    self._source_lines[i] = (lineno, source[indent:], raw)
+                else:
+                    indent = None
+
+    def clean_ignored_lines(self):
+        for i, (_, source, _) in enumerate(self._source_lines):
+            for pattern in DEFAULT_IGNORED_LINES:
+                if pattern.match(source):
+                    self._source_lines.pop(i)

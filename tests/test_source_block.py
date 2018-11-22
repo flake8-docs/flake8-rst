@@ -1,4 +1,5 @@
 import doctest
+import optparse
 import pytest
 
 try:
@@ -6,7 +7,7 @@ try:
 except ImportError:
     import pathlib2 as pathlib
 
-from flake8_rst.rst import RST_RE
+from flake8_rst.rst import RST_RE, apply_default_groupnames, apply_directive_specific_options
 from flake8_rst.sourceblock import SourceBlock
 from hypothesis import assume, given, note
 from hypothesis import strategies as st
@@ -60,9 +61,54 @@ def test_clean_doctest():
     for match, block in zip(RST_RE.finditer(src), code_block.find_blocks(RST_RE)):
         origin_code = match.group('code')
         origin_code = ''.join((line.source for line in doctest.DocTestParser().get_examples(origin_code)))
-        block.clean()
+
+        assert block.clean_doctest()
         assert origin_code == block.source_block
         assert '>>>' not in origin_code
+
+
+@pytest.mark.parametrize('src, expected', [
+    (DATA_DIR / 'example_11.rst', "name = 'Brian'\nother = brian\n%timeit a = (1, 2,name)  # noqa: F821\n"
+                                  "b = (3, 4, other)\nfor i in range(3):\n   print(a[i] is b[i])\n\n"),
+    (".. ipython:: python\n   In [4]: grouped = df.groupby('A')\n\n   In [5]: for name, group in grouped:\n"
+     "      ...:     print(name)\n      ...:     print(group)\n      ...:\n",
+     "grouped = df.groupby('A')\nfor name, group in grouped:\n    print(name)\n    print(group)\n\n")
+])
+def test_clean_ipython(src, expected):
+    if isinstance(src, pathlib.Path):
+        src = src.open().read()
+
+    code_block = SourceBlock.from_source('', src)
+
+    block = next(code_block.find_blocks(RST_RE))
+
+    assert block.clean_ipython()
+    assert expected == block.source_block
+
+
+@pytest.mark.parametrize('src, expected', [
+    ('%timeit a = (1, 2,name)\n', 'a = (1, 2,name)\n'),
+    ('%time a = (1, 2,name)\nb = (3, 4, other)\n', 'a = (1, 2,name)\nb = (3, 4, other)\n'),
+    ('%time a = (1, 2,\n           name)\nb = (3, 4, other)\n', 'a = (1, 2,\n     name)\nb = (3, 4, other)\n'),
+])
+def test_clean_console_syntax(src, expected):
+    block = SourceBlock.from_source('', src)
+
+    block.clean_console_syntax()
+
+    assert expected == block.source_block
+
+
+@pytest.mark.parametrize('src, expected', [
+    ('@okexcept\na = (1, 2,name)\n', 'a = (1, 2,name)\n'),
+    ('@savefig "picture.png"\na = (1, 2,name)\nb = (3, 4, other)\n', 'a = (1, 2,name)\nb = (3, 4, other)\n'),
+])
+def test_clean_ignored_lines(src, expected):
+    block = SourceBlock.from_source('', src)
+
+    block.clean_ignored_lines()
+
+    assert expected == block.source_block
 
 
 @given(code_strategy, code_strategy, code_strategy)
@@ -78,21 +124,28 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
     assert expected.complete_block == reversed_merged.complete_block
 
 
-@pytest.mark.parametrize("src, expected", [
-    (".. ipython:: python\n\n   code-line\n", {'group': 'ipython', 'add-ignore': 'E302, E305'}),
-    (".. ipython:: python\n   :flake8-group: None\n   :flake8-add-ignore: C404\n\n   code-line\n",
-     {'group': 'None', 'add-ignore': 'C404, E302, E305'}),
-    (".. ipython:: python\n   :flake8-group: Anything\n\n   code-line\n",
-     {'group': 'Anything', 'add-ignore': 'E302, E305'}),
-    (".. ipython:: python\n   :flake8-group: Anything\n   :flake8-bootstrap: import something\n\n   code-line\n",
-     {'bootstrap': 'import something', 'group': 'Anything', 'add-ignore': 'E302, E305'}),
-    (".. code-block:: python\n\n   code-line\n", {'group': 'None'}),
-    (".. code-block:: python\n   :flake8-group: test-123\n\n   code-line\n", {'group': 'test-123'}),
-    (".. code-block:: python\n   :flake8-bootstrap: import numpy as np; import pandas as pd\n\n   code-line\n",
-     {'bootstrap': 'import numpy as np; import pandas as pd', 'group': 'None'}),
+@pytest.mark.parametrize("filename, directive, roles, default_groupnames, expected", [
+    ('test.rst', 'code-block', {}, "*.rst->*: default", {'group': 'default'}),
+    ('test.py', 'code-block', {}, "*.rst->*: default", {'group': 'None'}),
+    ('test.rst', 'code-block', {}, "*->code-block: code-block, *->ipython: ipython", {'group': 'code-block'}),
+    ('test.rst', 'ipython', {}, "*->code-block: code-block, *->ipython: ipython", {'group': 'ipython'}),
+    ('test.py', 'code-block', {}, "last.py->code-block: code-block, *.rst->ipython: ipython", {'group': 'None'}),
 ])
-def test_get_roles(src, expected):
-    block = next(SourceBlock.from_source('', src).find_blocks(RST_RE))
+def test_default_groupname(filename, directive, roles, default_groupnames, expected):
+    func = apply_default_groupnames(lambda *a, **k: [SourceBlock([], [], directive=directive, roles=roles)])
+    block = next(func(filename, options=optparse.Values(dict(default_groupnames=default_groupnames))))
+
+    assert expected == block.roles
+
+
+@pytest.mark.parametrize("directive, roles, expected", [
+    ('code-block', {}, {}),
+    ('ipython', {}, {'add-ignore': 'E302, E305'}),
+    ('ipython', {'add-ignore': 'F'}, {'add-ignore': 'F, E302, E305'}),
+])
+def test_directive_specific_options(directive, roles, expected):
+    func = apply_directive_specific_options(lambda *a, **k: [SourceBlock([], [], directive=directive, roles=roles)])
+    block = next(func())
 
     assert expected == block.roles
 
