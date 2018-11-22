@@ -64,7 +64,7 @@ class RstManager(Manager):
 
                 lines = checker.processor.read_lines()
 
-                for code_block in find_sourcecode(filename, self.options.bootstrap, ''.join(lines)):
+                for code_block in find_sourcecode(filename, self.options, ''.join(lines)):
                     checker = RstFileChecker.from_sourcecode(
                         filename=filename, checks=checks, options=self.options,
                         style_guide=self.style_guide, code_block=code_block

@@ -7,7 +7,8 @@ from flake8_rst.sourceblock import SourceBlock
 
 @pytest.fixture()
 def options(mocker):
-    return mocker.Mock(max_line_length=80, verbose=0, hang_closing=False, ignore=[])
+    return mocker.Mock(max_line_length=80, verbose=0, hang_closing=False,
+                       ignore=[], bootstrap=None, default_groupnames='*.rst->*: default')
 
 
 @pytest.fixture()
@@ -23,7 +24,7 @@ def checker(request, options, checks):
     from flake8_rst.checker import RstFileChecker
 
     with request.param.open() as f:
-        for code_block in find_sourcecode(str(request.param), '', f.read()):
+        for code_block in find_sourcecode(str(request.param), options, f.read()):
             return RstFileChecker.from_sourcecode(
                 filename=__name__, checks=checks.to_dictionary(), options=options,
                 style_guide=None, code_block=code_block)
