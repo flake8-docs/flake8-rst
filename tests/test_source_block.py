@@ -150,10 +150,10 @@ def test_directive_specific_options(directive, roles, expected):
     assert expected == block.roles
 
 
-@given(role=st.characters(), value=st.characters(), comment=st.characters())
+@given(role=code_strategy, value=code_strategy, comment=code_strategy)
 @example(role='group', value='Group#4', comment='Within 4th group.')
-@pytest.mark.parametrize("string_format", ['   :flake8-{role}:{value}\n',
-                                           '   :flake8-{role}:{value} #{comment}\n'])
+@pytest.mark.parametrize("string_format", [u'   :flake8-{role}:{value}\n',
+                                           u'   :flake8-{role}:{value} #{comment}\n'])
 def test_roles(string_format, role, value, comment):
     assume(role.strip() and value.strip() and comment.strip())
     role_string = string_format.format(role=role, value=value, comment=comment)
