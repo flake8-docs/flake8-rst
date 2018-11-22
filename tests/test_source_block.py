@@ -61,9 +61,54 @@ def test_clean_doctest():
     for match, block in zip(RST_RE.finditer(src), code_block.find_blocks(RST_RE)):
         origin_code = match.group('code')
         origin_code = ''.join((line.source for line in doctest.DocTestParser().get_examples(origin_code)))
-        block.clean()
+
+        assert block.clean_doctest()
         assert origin_code == block.source_block
         assert '>>>' not in origin_code
+
+
+@pytest.mark.parametrize('src, expected', [
+    (DATA_DIR / 'example_11.rst', "name = 'Brian'\nother = brian\n%timeit a = (1, 2,name)  # noqa: F821\n"
+                                  "b = (3, 4, other)\nfor i in range(3):\n   print(a[i] is b[i])\n\n"),
+    (".. ipython:: python\n   In [4]: grouped = df.groupby('A')\n\n   In [5]: for name, group in grouped:\n"
+     "      ...:     print(name)\n      ...:     print(group)\n      ...:\n",
+     "grouped = df.groupby('A')\nfor name, group in grouped:\n    print(name)\n    print(group)\n\n")
+])
+def test_clean_ipython(src, expected):
+    if isinstance(src, pathlib.Path):
+        src = src.open().read()
+
+    code_block = SourceBlock.from_source('', src)
+
+    block = next(code_block.find_blocks(RST_RE))
+
+    assert block.clean_ipython()
+    assert expected == block.source_block
+
+
+@pytest.mark.parametrize('src, expected', [
+    ('%timeit a = (1, 2,name)\n', 'a = (1, 2,name)\n'),
+    ('%time a = (1, 2,name)\nb = (3, 4, other)\n', 'a = (1, 2,name)\nb = (3, 4, other)\n'),
+    ('%time a = (1, 2,\n           name)\nb = (3, 4, other)\n', 'a = (1, 2,\n     name)\nb = (3, 4, other)\n'),
+])
+def test_clean_console_syntax(src, expected):
+    block = SourceBlock.from_source('', src)
+
+    block.clean_console_syntax()
+
+    assert expected == block.source_block
+
+
+@pytest.mark.parametrize('src, expected', [
+    ('@okexcept\na = (1, 2,name)\n', 'a = (1, 2,name)\n'),
+    ('@savefig "picture.png"\na = (1, 2,name)\nb = (3, 4, other)\n', 'a = (1, 2,name)\nb = (3, 4, other)\n'),
+])
+def test_clean_ignored_lines(src, expected):
+    block = SourceBlock.from_source('', src)
+
+    block.clean_ignored_lines()
+
+    assert expected == block.source_block
 
 
 @given(code_strategy, code_strategy, code_strategy)

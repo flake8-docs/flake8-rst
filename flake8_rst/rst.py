@@ -86,14 +86,13 @@ def find_sourcecode(filename, options, src):
     source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else [source]
 
     for source_block in source_blocks:
-        code_blocks = source_block.find_blocks(RST_RE)
-        found_code_block = False
-        for code_block in code_blocks:
-            found_code_block = True
-            code_block.clean()
-            yield code_block
+        inner_blocks = source_block.find_blocks(RST_RE)
+        found_inner_block = False
+        for inner_block in inner_blocks:
+            found_inner_block = True
+            inner_block.clean()
+            yield inner_block
 
-        if not found_code_block:
-            source_code = source_block.clean_doctest()
-            if source_code:
-                yield SourceBlock(source_block.boot_lines, source_code, roles=source_block.roles)
+        if not found_inner_block and source_block.clean_doctest():
+            source_block.clean()
+            yield source_block
