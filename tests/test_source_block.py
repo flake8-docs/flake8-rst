@@ -7,7 +7,7 @@ try:
 except ImportError:
     import pathlib2 as pathlib
 
-from flake8_rst.rst import RST_RE, apply_default_groupnames, apply_directive_specific_options
+from flake8_rst.rst import RST_RE, apply_default_groupnames, apply_directive_specific_options, merge_by_group
 from flake8_rst.sourceblock import SourceBlock
 from hypothesis import assume, given, note
 from hypothesis import strategies as st
@@ -148,6 +148,20 @@ def test_directive_specific_options(directive, roles, expected):
     block = next(func())
 
     assert expected == block.roles
+
+
+@pytest.mark.parametrize("group_names, expected", [
+    (['None', 'None'], ['None', 'None']),
+    (['', ''], ['']),
+    (['A', 'B', 'A'], ['A', 'B']),
+    (['Ignore'], []),
+])
+def test_merge_by_group(group_names, expected):
+    source_blocks = [SourceBlock([], [(0, '', '')], roles={'group': group}) for group in group_names]
+    blocks = merge_by_group(lambda *a, **k: source_blocks)()
+    result = [block.roles['group'] for block in blocks]
+
+    assert result == expected
 
 
 @given(code_strategy, code_strategy, st.lists(code_strategy, min_size=1))
