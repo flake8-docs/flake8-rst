@@ -10,7 +10,7 @@ ROLE_RE = re.compile(r':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
 INDENT_RE = re.compile(r'(?P<indent>^ *).', re.MULTILINE)
 
-DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s.*|ok(except|warning))$')]
+DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s.*|ok(except|warning)|verbatim|doctest)$')]
 DEFAULT_CONSOLE_SYNTAX = [re.compile(r'^(%\S*\s)')]
 
 IPYTHON_START_RE = re.compile(r'In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
