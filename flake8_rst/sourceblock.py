@@ -10,7 +10,7 @@ ROLE_RE = re.compile(r':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
 INDENT_RE = re.compile(r'(?P<indent>^ *).', re.MULTILINE)
 
-DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s.*|ok(except|warning))$')]
+DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s.*|ok(except|warning)|verbatim|doctest)$')]
 DEFAULT_CONSOLE_SYNTAX = [re.compile(r'^(%\S*\s)')]
 
 IPYTHON_START_RE = re.compile(r'In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
@@ -26,13 +26,12 @@ def _match_default(match, group, default=None):
         return default
 
 
-def _extract_roles(match):
-    role_block = _match_default(match, 'roles')
+def _extract_roles(role_block):
     roles = {}
     if not role_block:
         return roles
     for match in ROLE_RE.finditer(role_block):
-        roles[match.group('role')] = match.group('value')
+        roles[match.group('role')] = match.group('value').partition(' #')[0].strip()
     return roles
 
 
@@ -111,7 +110,7 @@ class SourceBlock(object):
             source_slice = slice(line_start, line_start + len(origin_code.splitlines(True)))
             directive = _match_default(match, 'directive', '')
             language = _match_default(match, 'language', '')
-            roles = _extract_roles(match)
+            roles = _extract_roles(_match_default(match, 'roles'))
 
             source_block = SourceBlock(self._boot_lines, self._source_lines[source_slice], directive=directive,
                                        language=language, roles=roles)

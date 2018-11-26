@@ -8,8 +8,8 @@ except ImportError:
     import pathlib2 as pathlib
 
 from flake8_rst.rst import RST_RE, apply_default_groupnames, apply_directive_specific_options, merge_by_group
-from flake8_rst.sourceblock import SourceBlock
-from hypothesis import assume, given, note
+from flake8_rst.sourceblock import SourceBlock, _extract_roles
+from hypothesis import assume, given, note, example
 from hypothesis import strategies as st
 
 ROOT_DIR = pathlib.Path(__file__).parent
@@ -148,6 +148,19 @@ def test_directive_specific_options(directive, roles, expected):
     block = next(func())
 
     assert expected == block.roles
+
+
+@given(role=code_strategy, value=code_strategy, comment=code_strategy)
+@example(role='group', value='Group#4', comment='Within 4th group.')
+@pytest.mark.parametrize("string_format", [u'   :flake8-{role}:{value}\n',
+                                           u'   :flake8-{role}:{value} #{comment}\n'])
+def test_roles(string_format, role, value, comment):
+    assume(role.strip() and value.strip() and comment.strip())
+    role_string = string_format.format(role=role, value=value, comment=comment)
+    note(role_string)
+    roles = _extract_roles(role_string)
+
+    assert roles[role] == value
 
 
 @pytest.mark.parametrize("group_names, expected", [
