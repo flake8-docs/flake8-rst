@@ -172,7 +172,7 @@ def test_roles(string_format, role, value, comment):
 def test_merge_by_group(group_names, expected):
     source_blocks = [SourceBlock([], [(0, '', '')], roles={'group': group}) for group in group_names]
     blocks = merge_by_group(lambda *a, **k: source_blocks)()
-    result = [block.roles['group'] for block in blocks]
+    result = sorted([block.roles['group'] for block in blocks])
 
     assert result == expected
 
