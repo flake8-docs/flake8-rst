@@ -30,11 +30,13 @@ def merge_by_group(func):
         blocks = {}
         for block in func(*args, **kwargs):
             group = block.roles['group']
-            if group != 'None':
+            if group == 'None':
+                yield block
+            elif group == 'Ignore':
+                continue
+            else:
                 data = blocks.setdefault(group, [])
                 data.append(block)
-            else:
-                yield block
         for merge_blocks in blocks.values():
             yield SourceBlock.merge(merge_blocks)
 
