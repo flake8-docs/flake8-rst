@@ -1,3 +1,5 @@
+import itertools
+
 import re
 from fnmatch import fnmatch
 from functools import wraps
@@ -16,9 +18,29 @@ RST_RE = re.compile(
     re.MULTILINE,
 )
 
+RST_RE = re.compile(
+    r'(?P<before>'
+    r'^(?P<indent> *)^(?!\.{2} ).*::$'
+    r'(?P<roles>(^(?P=indent) +:\S+:.*\n)*)'
+    r'\n*'
+    r')'
+    r'(?P<code>(^((?P=indent) {3} *.*)?\n)+(^(?P=indent) {3} *.*(\n)?))',
+    re.MULTILINE,
+)
+
+
 DOCSTRING_RE = re.compile(
     r'(?P<before>\n?)'
     r'^(?P<code>((?P<indent> *)\"{3}.*\n(?:(?:(?P=indent).+)?\n)*(?P=indent)\"{3}))',
+    re.MULTILINE,
+)
+
+HIGHLIGHT_RE = re.compile(
+    r'(?P<before>'
+    r'^\.\. (?P<directive>highlight):: (?P<language>.*)\n'
+    r'( .*\n)*'
+    r')'
+    r'(?P<code>(.*\n)*)',
     re.MULTILINE,
 )
 
@@ -87,6 +109,8 @@ def find_sourcecode(filename, options, src):
 
     for source_block in source_blocks:
         inner_blocks = source_block.find_blocks(RST_RE)
+        if source_block.directive == 'highlight' and source_block.language in ['python3']:
+            inner_blocks = itertools.chain(inner_blocks, source_block.find_blocks(MARKER_RE))
         found_inner_block = False
         for inner_block in inner_blocks:
             found_inner_block = True
