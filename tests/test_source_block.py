@@ -27,7 +27,7 @@ def test_from_sourcecode(bootstrap, src):
     expected = '\n'.join([bootstrap, src])
     result = code_block.complete_block
 
-    assert expected == result
+    assert result == expected
 
 
 @given(code_strategy)
@@ -36,8 +36,8 @@ def test_get_correct_line(src):
 
     for line_number, line in enumerate(src.splitlines(True), start=1):
         code_line = code_block.get_code_line(line_number)
-        assert line_number == code_line['lineno']
-        assert line == code_line['source']
+        assert code_line['lineno'] == line_number
+        assert code_line['source'] == line
 
 
 def test_find_block():
@@ -49,7 +49,7 @@ def test_find_block():
     for match, block in zip(RST_RE.finditer(src), code_block.find_blocks(RST_RE)):
         origin_code = match.group('code')
         origin_code = ''.join(map(lambda s: s.lstrip() + '\n', origin_code.splitlines()))
-        assert origin_code == block.source_block
+        assert block.source_block == origin_code
 
 
 def test_clean_doctest():
@@ -63,7 +63,7 @@ def test_clean_doctest():
         origin_code = ''.join((line.source for line in doctest.DocTestParser().get_examples(origin_code)))
 
         assert block.clean_doctest()
-        assert origin_code == block.source_block
+        assert block.source_block == origin_code
         assert '>>>' not in origin_code
 
 
@@ -89,14 +89,27 @@ def test_clean_ipython(src, expected):
 @pytest.mark.parametrize('src, expected', [
     ('%timeit a = (1, 2,name)\n', 'a = (1, 2,name)\n'),
     ('%time a = (1, 2,name)\nb = (3, 4, other)\n', 'a = (1, 2,name)\nb = (3, 4, other)\n'),
-    ('%time a = (1, 2,\n           name)\nb = (3, 4, other)\n', 'a = (1, 2,\n     name)\nb = (3, 4, other)\n'),
 ])
 def test_clean_console_syntax(src, expected):
     block = SourceBlock.from_source('', src)
 
     block.clean_console_syntax()
+    block.clean_ignored_lines()
 
-    assert expected == block.source_block
+    assert block.source_block == expected
+
+
+@pytest.mark.parametrize('src', [
+    '%prun -l 4 f(x)\n',
+    '%%timeit x = range(10000)\nmax(x)\n',
+])
+def test_ignore_unrecognized_console_syntax(src):
+    block = SourceBlock.from_source('', src)
+
+    block.clean_console_syntax()
+    block.clean_ignored_lines()
+
+    assert not block.source_block
 
 
 @pytest.mark.parametrize('src, expected', [
@@ -108,7 +121,7 @@ def test_clean_ignored_lines(src, expected):
 
     block.clean_ignored_lines()
 
-    assert expected == block.source_block
+    assert block.source_block == expected
 
 
 @given(code_strategy, code_strategy, code_strategy)
@@ -120,8 +133,8 @@ def test_merge_source_blocks(bootstrap, src_1, src_2):
     merged = SourceBlock.merge([block1, block2])
     reversed_merged = SourceBlock.merge([block1, block2])
 
-    assert expected.complete_block == merged.complete_block
-    assert expected.complete_block == reversed_merged.complete_block
+    assert merged.complete_block == expected.complete_block
+    assert reversed_merged.complete_block == expected.complete_block
 
 
 @pytest.mark.parametrize("filename, directive, roles, default_groupnames, expected", [
@@ -135,7 +148,7 @@ def test_default_groupname(filename, directive, roles, default_groupnames, expec
     func = apply_default_groupnames(lambda *a, **k: [SourceBlock([], [], directive=directive, roles=roles)])
     block = next(func(filename, options=optparse.Values(dict(default_groupnames=default_groupnames))))
 
-    assert expected == block.roles
+    assert block.roles == expected
 
 
 @pytest.mark.parametrize("directive, roles, expected", [
@@ -147,7 +160,7 @@ def test_directive_specific_options(directive, roles, expected):
     func = apply_directive_specific_options(lambda *a, **k: [SourceBlock([], [], directive=directive, roles=roles)])
     block = next(func())
 
-    assert expected == block.roles
+    assert block.roles == expected
 
 
 @given(role=code_strategy, value=code_strategy, comment=code_strategy)
@@ -160,7 +173,7 @@ def test_roles(string_format, role, value, comment):
     note(role_string)
     roles = _extract_roles(role_string)
 
-    assert roles[role] == value
+    assert value == roles[role]
 
 
 @pytest.mark.parametrize("group_names, expected", [
@@ -183,4 +196,4 @@ def test_inject_bootstrap_blocks(bootstrap, src, injected_bootstrap):
     block = SourceBlock.from_source(bootstrap, src, roles={'bootstrap': '; '.join(injected_bootstrap)})
     expected = SourceBlock.from_source('\n'.join(injected_bootstrap), src)
 
-    assert expected.complete_block == block.complete_block
+    assert block.complete_block == expected.complete_block
