@@ -1,8 +1,26 @@
 import itertools
+import sys
 
-import operator
 import doctest
+import operator
 import re
+
+try:
+    if sys.version_info > (3, 5):
+        import IPython.core.inputtransformer2 as ipt
+
+        transform_manager = ipt.TransformerManager()
+        transform_manager.cleanup_transforms.clear()
+        transform_cell = transform_manager.transform_cell
+        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.run_line_magic\('(?:time(?:it)?)', '(.*)'\)")
+    else:
+        from IPython.core import inputsplitter as ipt
+
+        transformer = ipt.IPythonInputSplitter()
+        transform_cell = transformer.transform_cell
+        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.magic\(u'(?:time(?:it)?) (.*)'\)")
+except ImportError:
+    ipt = transform_cell = None
 
 LINENO, SOURCE, RAW = range(3)
 
@@ -11,7 +29,6 @@ ROLE_RE = re.compile(r':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 INDENT_RE = re.compile(r'(?P<indent>^ *).', re.MULTILINE)
 
 DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s.*|ok(except|warning)|verbatim|doctest)$')]
-DEFAULT_CONSOLE_SYNTAX = [re.compile(r'^(%\S*\s)')]
 
 IPYTHON_START_RE = re.compile(r'In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
 IPYTHON_FOLLOW_RE = re.compile(r'^\.{3}:\s?(?P<code>.*\n)')
@@ -47,6 +64,7 @@ class SourceBlock(object):
 
     @staticmethod
     def convert_bootstrap(bootstrap, split='\n'):
+        bootstrap += '\nget_ipython = None'
         return [(0, line + '\n', line + '\n') for line in bootstrap.split(split)]
 
     @classmethod
@@ -177,25 +195,22 @@ class SourceBlock(object):
             return True
         return False
 
+    def clean_console_syntax(self):
+        block = self.source_block
+        source_block = transform_cell(block)
+        source_block = re.sub(RUN_MAGIC_RE, r'\1', source_block)
+
+        if block != source_block:
+            self._source_lines = list(self._overwritten_source(source_block))
+            return True
+        return False
+
     def _overwritten_source(self, src, start_line=0):
         for line, (lineno, _, raw) in zip(src.splitlines(True), itertools.islice(self._source_lines, start_line, None)):
-            if line not in raw:
+            if not line.startswith('get_ipython') and line not in raw:
                 raise ValueError
 
             yield (lineno, line, raw)
-
-    def clean_console_syntax(self):
-        indent = None
-        for i, (lineno, source, raw) in enumerate(self._source_lines):
-            for pattern in DEFAULT_CONSOLE_SYNTAX:
-                match = pattern.match(source)
-                if match:
-                    indent = len(match.group(1))
-                    self._source_lines[i] = (lineno, source.replace(match.group(1), ''), raw)
-                elif indent and source.startswith(' ' * indent):
-                    self._source_lines[i] = (lineno, source[indent:], raw)
-                else:
-                    indent = None
 
     def clean_ignored_lines(self):
         for i, (_, source, _) in enumerate(self._source_lines):
