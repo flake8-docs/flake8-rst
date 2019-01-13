@@ -16,7 +16,7 @@ from hypothesis import strategies as st
 ROOT_DIR = pathlib.Path(__file__).parent
 DATA_DIR = ROOT_DIR / 'data'
 
-code_strategy = st.characters(blacklist_categories=['Cc'])
+code_strategy = st.characters(whitelist_categories=['Lu', 'Ll', 'Lt', 'Lm', 'Lo', 'Nl', 'Mn', 'Mc', 'Nd', 'Pc'])
 
 
 @given(code_strategy, code_strategy)
@@ -53,31 +53,34 @@ def test_find_block():
         assert block.source_block == origin_code
 
 
-@given(st.lists(st.tuples(code_strategy, code_strategy), min_size=1))
+highlight_language = st.sampled_from(('python3', 'sh', 'pytb'))
+
+
+@given(st.lists(st.tuples(highlight_language, code_strategy), min_size=1))
 def test_split_block(blocks):
-    src = '\n'.join(('.. highlight:: {}\n\n{}'.format(language, source) for language, source in blocks))
-    note(src)
+    src = u''.join((u'.. highlight:: {}\n{}\n'.format(language, source) for language, source in blocks))
+
     code_block = SourceBlock.from_source('', src)
     code_blocks = list(code_block.split_by(HIGHLIGHT_RE))
 
+    assert len(code_blocks) == len(blocks)
     for (language, source), block in zip(blocks, code_blocks):
         assume('highlight' not in source)
         assert block.language == language
         assert block.directive == 'highlight'
-        assert block.source_block == source
+        assert block.source_block == source + '\n'
 
 
-@given(st.lists(code_strategy, min_size=1))
-def test_split_with_default_block(blocks):
-    src = '.. highlight:: python3\n\n'.join(blocks)
-    note(src)
-    code_block = SourceBlock.from_source('', src)
+@given(highlight_language, st.lists(code_strategy, min_size=1))
+def test_split_with_default_block(language, blocks):
+    src = u'\n.. highlight:: {}\n'.format(language).join(blocks) + '\n'
+    code_block = SourceBlock.from_source('', src, language=language)
     code_blocks = list(code_block.split_by(HIGHLIGHT_RE))
-
+    assert len(code_blocks) == len(blocks)
     for source, block in zip(blocks, code_blocks):
-        assert block.language == 'python3'
+        assert block.language == language
         assert block.directive == 'highlight'
-        assert block.source_block == source
+        assert block.source_block == source + '\n'
 
 
 def test_clean_doctest():

@@ -143,9 +143,13 @@ class SourceBlock(object):
             if match:
                 if lines:
                     yield SourceBlock(self._boot_lines, lines, directive=directive, language=language, roles=self.roles)
-                    lines.clear()
+                    lines = []
                 directive = match.group('directive')
                 language = match.group('language')
+            else:
+                lines.append(line)
+        if lines:
+            yield SourceBlock(self._boot_lines, lines, directive=directive, language=language, roles=self.roles)
 
     def remove_indentation(self):
         indentation = min(INDENT_RE.findall(self.source_block))
