@@ -61,6 +61,7 @@ extensions = [...,
 |-----------------------|--------------------------------------------------|--------------------------------------------|
 | `:flake8-group:`      | Blocks with same group are combined to one.      | `:flake8-group: Group1`                    |
 |                       | Blocks with group `None` are checked individual. | `:flake8-group: None`                      |
+|                       | Blocks with group `Ignore` are not checked.      | `:flake8-group: Ignore`                    |
 | `:flake8-set-ignore:` | Overwrites ignore list for current block.        | `:flake8-set-ignore: F821, E999`           |
 | `:flake8-add-ignore:` | Adds arguments to ignore list for current block. | `:flake8-add-ignore: E999`                 |
 | `:flake8-set-select:` | Overwrites select list for current block.        | `:flake8-set-select: E, F`                 |
@@ -70,6 +71,8 @@ extensions = [...,
 Keep in mind: 
 * Roles added to blocks within the same group (except group `None`) have no effect unless they appear in the first block.
 * provided bootstrap-code will get split by `; ` into individual lines.
+* `E999 SyntaxError: invalid syntax` causes `flake8` to skip `AST` tests. Keep mandatory `E999` issues in blocks with 
+`:flake8-group: Ignore` to preserve full testing for the rest of the blocks.
 
 Default block naming
 --------------------
