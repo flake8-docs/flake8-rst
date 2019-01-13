@@ -195,6 +195,8 @@ class SourceBlock(object):
         return False
 
     def clean_console_syntax(self):
+        if not transform_cell:
+            return False
         block = self.source_block
         source_block = transform_cell(block)
         source_block = re.sub(RUN_MAGIC_RE, r'\1', source_block)
