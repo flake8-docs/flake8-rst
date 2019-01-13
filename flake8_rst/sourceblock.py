@@ -81,7 +81,7 @@ class SourceBlock(object):
         return cls(boot_lines, source_lines, directive=main_block.directive,
                    language=main_block.language, roles=main_block.roles)
 
-    def __init__(self, boot_lines, source_lines, directive='', language='', roles=None):
+    def __init__(self, boot_lines, source_lines, directive='highlight', language='python3', roles=None):
         self._boot_lines = boot_lines
         self._source_lines = source_lines
         self.directive = directive
@@ -133,6 +133,19 @@ class SourceBlock(object):
                                        language=language, roles=roles)
             source_block.remove_indentation()
             yield source_block
+
+    def split_by(self, expression):
+        src = self._source_lines
+        lines = []
+        directive, language = self.directive, self.language
+        for line in src:
+            match = re.match(expression, line[SOURCE])
+            if match:
+                if lines:
+                    yield SourceBlock(self._boot_lines, lines, directive=directive, language=language, roles=self.roles)
+                    lines.clear()
+                directive = match.group('directive')
+                language = match.group('language')
 
     def remove_indentation(self):
         indentation = min(INDENT_RE.findall(self.source_block))

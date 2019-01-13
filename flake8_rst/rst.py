@@ -18,7 +18,7 @@ RST_RE = re.compile(
     re.MULTILINE,
 )
 
-RST_RE = re.compile(
+MARKER_RE = re.compile(
     r'(?P<before>'
     r'^(?P<indent> *)^(?!\.{2} ).*::$'
     r'(?P<roles>(^(?P=indent) +:\S+:.*\n)*)'
@@ -28,25 +28,16 @@ RST_RE = re.compile(
     re.MULTILINE,
 )
 
-
 DOCSTRING_RE = re.compile(
     r'(?P<before>\n?)'
     r'^(?P<code>((?P<indent> *)\"{3}.*\n(?:(?:(?P=indent).+)?\n)*(?P=indent)\"{3}))',
     re.MULTILINE,
 )
 
-HIGHLIGHT_RE = re.compile(
-    r'(?P<before>'
-    r'^\.\. (?P<directive>highlight):: (?P<language>.*)\n'
-    r'( .*\n)*'
-    r')'
-    r'(?P<code>(.*\n)*)',
-    re.MULTILINE,
-)
+HIGHLIGHT_RE = re.compile(r'^\.\. (?P<directive>highlight):: (?P<language>.*)$', re.MULTILINE)
 
 
 def merge_by_group(func):
-
     @wraps(func)
     def func_wrapper(*args, **kwargs):
         blocks = {}
@@ -107,7 +98,7 @@ def apply_default_groupnames(func):
 def find_sourcecode(filename, options, src):
     contains_python_code = filename.split('.')[-1].startswith('py')
     source = SourceBlock.from_source(options.bootstrap, src)
-    source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else [source]
+    source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else source.split_by(HIGHLIGHT_RE)
 
     for source_block in source_blocks:
         inner_blocks = source_block.find_blocks(RST_RE)
