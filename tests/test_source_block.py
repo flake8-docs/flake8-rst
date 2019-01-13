@@ -24,7 +24,7 @@ def test_from_sourcecode(bootstrap, src):
 
     code_block = SourceBlock.from_source(bootstrap, src)
 
-    expected = '\n'.join([bootstrap, 'get_ipython = None', src])
+    expected = '\n'.join([bootstrap, src])
     result = code_block.complete_block
 
     assert result == expected
@@ -94,6 +94,7 @@ def test_clean_console_syntax(src, expected):
     block = SourceBlock.from_source('', src)
 
     block.clean_console_syntax()
+    block.clean_ignored_lines()
 
     assert block.source_block == expected
 
@@ -102,12 +103,13 @@ def test_clean_console_syntax(src, expected):
     '%prun -l 4 f(x)\n',
     '%%timeit x = range(10000)\nmax(x)\n',
 ])
-def test_(src):
+def test_ignore_unrecognized_console_syntax(src):
     block = SourceBlock.from_source('', src)
 
     block.clean_console_syntax()
+    block.clean_ignored_lines()
 
-    assert block.source_block.startswith('get_ipython()')
+    assert not block.source_block
 
 
 @pytest.mark.parametrize('src, expected', [

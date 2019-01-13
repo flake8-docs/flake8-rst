@@ -28,7 +28,7 @@ ROLE_RE = re.compile(r':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
 INDENT_RE = re.compile(r'(?P<indent>^ *).', re.MULTILINE)
 
-DEFAULT_IGNORED_LINES = [re.compile(r'^@(savefig\s.*|ok(except|warning)|verbatim|doctest)$')]
+DEFAULT_IGNORED_LINES = [re.compile(r'^get_ipython\(\)|@(savefig\s.*|ok(except|warning)|verbatim|doctest)$')]
 
 IPYTHON_START_RE = re.compile(r'In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
 IPYTHON_FOLLOW_RE = re.compile(r'^\.{3}:\s?(?P<code>.*\n)')
@@ -64,7 +64,6 @@ class SourceBlock(object):
 
     @staticmethod
     def convert_bootstrap(bootstrap, split='\n'):
-        bootstrap += '\nget_ipython = None'
         return [(0, line + '\n', line + '\n') for line in bootstrap.split(split)]
 
     @classmethod
