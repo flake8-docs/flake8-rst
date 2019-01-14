@@ -22,8 +22,13 @@ class Application(Flake8Application):
             help='Set default group names.', type='string',
         )
         self.option_manager.add_option(
-            '--highlight-languages', default=["python3", "py3", "pycon", "python", "py"], parse_from_config=True,
-            help='', type='string',
+            '--check-languages', default=["python3", "py3", "pycon", "python", "py"], parse_from_config=True,
+            help='List of highlight-languages which are checked when using literal code-blocks (::).', type='string',
+        )
+        self.option_manager.add_option(
+            '--highlight-language', default="python3", parse_from_config=True,
+            help='Default language when no `.. highlight::` directive was used yet. Corresponds to'
+                 '`highlight-language` config variable of sphinx.', type='string',
         )
         options.register_default_options(self.option_manager)
 

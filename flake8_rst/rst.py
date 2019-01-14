@@ -92,19 +92,23 @@ def apply_default_groupnames(func):
     return func_wrapper
 
 
+def should_check_for_literal_blocks(source_block, highlight_languages):
+    return source_block.directive == 'highlight' and source_block.language in highlight_languages
+
+
 @apply_directive_specific_options
 @merge_by_group
 @apply_default_groupnames
 def find_sourcecode(filename, options, src):
     contains_python_code = filename.split('.')[-1].startswith('py')
-    source = SourceBlock.from_source(options.bootstrap, src)
+    source = SourceBlock.from_source(options.bootstrap, src, language=options.highlight_language)
     source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else source.split_by(HIGHLIGHT_RE)
 
-    highlight_languages = options.highlight_languages
+    highlight_languages = options.check_languages
 
     for source_block in source_blocks:
         search_expression = {RST_RE}
-        if source_block.directive == 'highlight' and source_block.language in highlight_languages:
+        if should_check_for_literal_blocks(source_block, highlight_languages):
             search_expression.add(MARKER_RE)
 
         found_inner_block = False
