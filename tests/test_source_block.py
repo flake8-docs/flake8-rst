@@ -89,6 +89,10 @@ def test_clean_ipython(src, expected):
 @pytest.mark.parametrize('src, expected', [
     ('%timeit a = (1, 2,name)\n', 'a = (1, 2,name)\n'),
     ('%time a = (1, 2,name)\nb = (3, 4, other)\n', 'a = (1, 2,name)\nb = (3, 4, other)\n'),
+    ("%time df = pd.read_csv('big.csv')\n", "df = pd.read_csv('big.csv')\n"),
+    ('%time df = pd.read_csv("big.csv")\n', 'df = pd.read_csv("big.csv")\n'),
+    ('%time df = pd.read_csv("big.csv")\n%time df = pd.read_csv(\'big.csv\')\n',
+     'df = pd.read_csv("big.csv")\ndf = pd.read_csv(\'big.csv\')\n'),
 ])
 def test_clean_console_syntax(src, expected):
     block = SourceBlock.from_source('', src)
