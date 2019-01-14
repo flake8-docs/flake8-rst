@@ -34,7 +34,7 @@ DOCSTRING_RE = re.compile(
     re.MULTILINE,
 )
 
-HIGHLIGHT_RE = re.compile(r'^\.\. (?P<directive>highlight):: (?P<language>.*)$', re.MULTILINE)
+HIGHLIGHT_RE = re.compile(r'^\.\. (?P<directive>highlight):: (?P<language>\w+)$', re.MULTILINE)
 
 
 def merge_by_group(func):
@@ -100,12 +100,15 @@ def find_sourcecode(filename, options, src):
     source = SourceBlock.from_source(options.bootstrap, src)
     source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else source.split_by(HIGHLIGHT_RE)
 
+    highlight_languages = options.highlight_languages
+
     for source_block in source_blocks:
-        inner_blocks = source_block.find_blocks(RST_RE)
-        if source_block.directive == 'highlight' and source_block.language in ['python3']:
-            inner_blocks = itertools.chain(inner_blocks, source_block.find_blocks(MARKER_RE))
+        search_expression = {RST_RE}
+        if source_block.directive == 'highlight' and source_block.language in highlight_languages:
+            search_expression.add(MARKER_RE)
+
         found_inner_block = False
-        for inner_block in inner_blocks:
+        for inner_block in itertools.chain.from_iterable((source_block.find_blocks(exp) for exp in search_expression)):
             found_inner_block = True
             inner_block.clean()
             yield inner_block

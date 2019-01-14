@@ -21,6 +21,10 @@ class Application(Flake8Application):
             '--default-groupnames', default="*.rst->*: default", parse_from_config=True,
             help='Set default group names.', type='string',
         )
+        self.option_manager.add_option(
+            '--highlight-languages', default=["python3", "py3", "pycon", "python", "py"], parse_from_config=True,
+            help='', type='string',
+        )
         options.register_default_options(self.option_manager)
 
     def make_file_checker_manager(self):
