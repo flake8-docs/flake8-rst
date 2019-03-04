@@ -40,21 +40,23 @@ def test_get_correct_line(src):
         assert code_line['source'] == line
 
 
-def test_find_block():
-    example = DATA_DIR / 'example_1.rst'
-    src = example.open().read()
+@pytest.fixture()
+def first_example():
+    return (DATA_DIR / 'example_1.rst').read_text()
 
-    code_block = SourceBlock.from_source('', src)
 
-    for match, block in zip(RST_RE.finditer(src), code_block.find_blocks(RST_RE)):
+def test_find_block(first_example):
+    code_block = SourceBlock.from_source('', first_example)
+
+    for match, block in zip(RST_RE.finditer(first_example), code_block.find_blocks(RST_RE)):
         origin_code = match.group('code')
-        origin_code = ''.join(map(lambda s: s.lstrip() + '\n', origin_code.splitlines()))
+        origin_code = ''.join(s.lstrip() + '\n' for s in origin_code.splitlines())
         assert block.source_block == origin_code
 
 
 def test_clean_doctest():
     example = DATA_DIR / 'example_1.rst'
-    src = example.open().read()
+    src = example.read_text()
 
     code_block = SourceBlock.from_source('', src)
 
@@ -67,16 +69,23 @@ def test_clean_doctest():
         assert '>>>' not in origin_code
 
 
-@pytest.mark.parametrize('src, expected', [
-    (DATA_DIR / 'example_11.rst', "name = 'Brian'\nother = brian\n%timeit a = (1, 2,name)  # noqa: F821\n"
-                                  "b = (3, 4, other)\nfor i in range(3):\n   print(a[i] is b[i])\n\n"),
-    (".. ipython:: python\n   In [4]: grouped = df.groupby('A')\n\n   In [5]: for name, group in grouped:\n"
-     "      ...:     print(name)\n      ...:     print(group)\n      ...:\n",
-     "grouped = df.groupby('A')\nfor name, group in grouped:\n    print(name)\n    print(group)\n\n")
-])
+_data = [
+    (DATA_DIR / 'example_11.rst',
+     "name = 'Brian'\nother = brian\n%timeit a = (1, 2,name)  # noqa: F821\n"
+     "b = (3, 4, other)\nfor i in range(3):\n   print(a[i] is b[i])\n\n"
+     ),
+    (
+        ".. ipython:: python\n   In [4]: grouped = df.groupby('A')\n\n   In [5]: for name, group in grouped:\n"
+        "      ...:     print(name)\n      ...:     print(group)\n      ...:\n",
+        "grouped = df.groupby('A')\nfor name, group in grouped:\n    print(name)\n    print(group)\n\n"
+    )
+]
+
+
+@pytest.mark.parametrize('src, expected', _data)
 def test_clean_ipython(src, expected):
     if isinstance(src, pathlib.Path):
-        src = src.open().read()
+        src = src.read_text()
 
     code_block = SourceBlock.from_source('', src)
 

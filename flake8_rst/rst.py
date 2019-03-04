@@ -61,6 +61,8 @@ def apply_directive_specific_options(func):
 def apply_default_groupnames(func):
     def resolve_mapping(mappings, pattern, split):
         for entry in mappings:
+            if not entry:
+                continue
             key, values = entry.split(split, 1)
             if fnmatch(pattern, key.strip()):
                 yield values.strip()
