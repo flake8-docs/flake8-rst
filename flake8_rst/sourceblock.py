@@ -12,13 +12,15 @@ try:
         transform_manager = ipt.TransformerManager()
         transform_manager.cleanup_transforms.clear()
         transform_cell = transform_manager.transform_cell
-        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.run_line_magic\('(?:time(?:it)?)', '(.*)'\)")
+        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.run_line_magic\('(?:time(?:it)?)', (?P<x>(['\"]))(.*)(?P=x)\)",
+                                  re.MULTILINE)
     else:
         from IPython.core import inputsplitter as ipt
 
         transformer = ipt.IPythonInputSplitter()
         transform_cell = transformer.transform_cell
-        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.magic\(u'(?:time(?:it)?) (.*)'\)")
+        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.magic\(u(?P<x>(['\"]))(?:time(?:it)?) (.*)(?P=x)\)",
+                                  re.MULTILINE)
 except ImportError:
     ipt = transform_cell = None
 
@@ -28,7 +30,7 @@ ROLE_RE = re.compile(r':flake8-(?P<role>\S*):\s?(?P<value>.*)$', re.MULTILINE)
 
 INDENT_RE = re.compile(r'(?P<indent>^ *).', re.MULTILINE)
 
-DEFAULT_IGNORED_LINES = [re.compile(r'^get_ipython\(\)|@(savefig\s.*|ok(except|warning)|verbatim|doctest)$')]
+DEFAULT_IGNORED_LINES = [re.compile(r'get_ipython\(\)|^@(savefig\s.*|ok(except|warning)|verbatim|doctest)$')]
 
 IPYTHON_START_RE = re.compile(r'In \[(?P<lineno>\d+)\]:\s?(?P<code>.*\n)')
 IPYTHON_FOLLOW_RE = re.compile(r'^\.{3}:\s?(?P<code>.*\n)')
@@ -216,7 +218,7 @@ class SourceBlock(object):
             return False
         block = self.source_block
         source_block = transform_cell(block)
-        source_block = re.sub(RUN_MAGIC_RE, r'\1', source_block)
+        source_block = re.sub(RUN_MAGIC_RE, r'\3', source_block)
 
         if block != source_block:
             self._source_lines = list(self._overwritten_source(source_block))
