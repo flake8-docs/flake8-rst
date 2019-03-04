@@ -7,7 +7,8 @@ try:
 except ImportError:
     import pathlib2 as pathlib
 
-from flake8_rst.rst import RST_RE, apply_default_groupnames, apply_directive_specific_options, merge_by_group
+from flake8_rst.rst import RST_RE, apply_default_groupnames, apply_directive_specific_options, merge_by_group, \
+    HIGHLIGHT_RE
 from flake8_rst.sourceblock import SourceBlock, _extract_roles
 from hypothesis import assume, given, note, example
 from hypothesis import strategies as st
@@ -15,7 +16,7 @@ from hypothesis import strategies as st
 ROOT_DIR = pathlib.Path(__file__).parent
 DATA_DIR = ROOT_DIR / 'data'
 
-code_strategy = st.characters(blacklist_categories=['Cc'])
+code_strategy = st.characters(whitelist_categories=['Lu', 'Ll', 'Lt', 'Lm', 'Lo', 'Nl', 'Mn', 'Mc', 'Nd', 'Pc'])
 
 
 @given(code_strategy, code_strategy)
@@ -50,6 +51,36 @@ def test_find_block():
         origin_code = match.group('code')
         origin_code = ''.join(map(lambda s: s.lstrip() + '\n', origin_code.splitlines()))
         assert block.source_block == origin_code
+
+
+highlight_language = st.sampled_from(('python3', 'sh', 'pytb'))
+
+
+@given(st.lists(st.tuples(highlight_language, code_strategy), min_size=1))
+def test_split_block(blocks):
+    src = u''.join((u'.. highlight:: {}\n{}\n'.format(language, source) for language, source in blocks))
+
+    code_block = SourceBlock.from_source('', src)
+    code_blocks = list(code_block.split_by(HIGHLIGHT_RE))
+
+    assert len(code_blocks) == len(blocks)
+    for (language, source), block in zip(blocks, code_blocks):
+        assume('highlight' not in source)
+        assert block.language == language
+        assert block.directive == 'highlight'
+        assert block.source_block == source + '\n'
+
+
+@given(highlight_language, st.lists(code_strategy, min_size=1))
+def test_split_with_default_block(language, blocks):
+    src = u'\n.. highlight:: {}\n'.format(language).join(blocks) + '\n'
+    code_block = SourceBlock.from_source('', src, language=language)
+    code_blocks = list(code_block.split_by(HIGHLIGHT_RE))
+    assert len(code_blocks) == len(blocks)
+    for source, block in zip(blocks, code_blocks):
+        assert block.language == language
+        assert block.directive == 'highlight'
+        assert block.source_block == source + '\n'
 
 
 def test_clean_doctest():

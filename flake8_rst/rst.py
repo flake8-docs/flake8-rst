@@ -1,3 +1,5 @@
+import itertools
+
 import re
 from fnmatch import fnmatch
 from functools import wraps
@@ -16,15 +18,26 @@ RST_RE = re.compile(
     re.MULTILINE,
 )
 
+MARKER_RE = re.compile(
+    r'(?P<before>'
+    r'^(?P<indent> *)^(?!\.{2} ).*::$'
+    r'(?P<roles>(^(?P=indent) +:\S+:.*\n)*)'
+    r'\n*'
+    r')'
+    r'(?P<code>(^((?P=indent) {3} *.*)?\n)+(^(?P=indent) {3} *.*(\n)?))',
+    re.MULTILINE,
+)
+
 DOCSTRING_RE = re.compile(
     r'(?P<before>\n?)'
     r'^(?P<code>((?P<indent> *)\"{3}.*\n(?:(?:(?P=indent).+)?\n)*(?P=indent)\"{3}))',
     re.MULTILINE,
 )
 
+HIGHLIGHT_RE = re.compile(r'^\.\. (?P<directive>highlight):: (?P<language>\w+)$', re.MULTILINE)
+
 
 def merge_by_group(func):
-
     @wraps(func)
     def func_wrapper(*args, **kwargs):
         blocks = {}
@@ -79,18 +92,27 @@ def apply_default_groupnames(func):
     return func_wrapper
 
 
+def should_check_for_literal_blocks(source_block, highlight_languages):
+    return source_block.directive == 'highlight' and source_block.language in highlight_languages
+
+
 @apply_directive_specific_options
 @merge_by_group
 @apply_default_groupnames
 def find_sourcecode(filename, options, src):
     contains_python_code = filename.split('.')[-1].startswith('py')
-    source = SourceBlock.from_source(options.bootstrap, src)
-    source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else [source]
+    source = SourceBlock.from_source(options.bootstrap, src, language=options.highlight_language)
+    source_blocks = source.find_blocks(DOCSTRING_RE) if contains_python_code else source.split_by(HIGHLIGHT_RE)
+
+    highlight_languages = options.check_languages
 
     for source_block in source_blocks:
-        inner_blocks = source_block.find_blocks(RST_RE)
+        search_expression = {RST_RE}
+        if should_check_for_literal_blocks(source_block, highlight_languages):
+            search_expression.add(MARKER_RE)
+
         found_inner_block = False
-        for inner_block in inner_blocks:
+        for inner_block in itertools.chain.from_iterable((source_block.find_blocks(exp) for exp in search_expression)):
             found_inner_block = True
             inner_block.clean()
             yield inner_block
