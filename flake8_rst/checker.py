@@ -62,7 +62,7 @@ class RstFileChecker(FileChecker):
 
     @classmethod
     def from_sourcecode(cls, style_guide, source_block, **kwargs):
-        return RstFileChecker(style_guide=style_guide, source_block=source_block, **kwargs)
+        return cls(style_guide=style_guide, source_block=source_block, **kwargs)
 
     def _make_processor(self):
         content = self.source_block.complete_block if self.source_block else ''

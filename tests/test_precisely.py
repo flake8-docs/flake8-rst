@@ -9,7 +9,7 @@ from flake8_rst.sourceblock import SourceBlock
 def options(mocker):
     return mocker.Mock(max_line_length=80, verbose=0, hang_closing=False,
                        ignore=[], bootstrap=None, default_groupnames='*.rst->*: default',
-                       max_doc_length=80)
+                       max_doc_length=80, check_languages=["python3", "py3", "pycon", "python", "py"])
 
 
 @pytest.fixture()
