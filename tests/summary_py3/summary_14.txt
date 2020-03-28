@@ -1,0 +1,3 @@
+./data/example_14.py:7:17: E222 multiple spaces after operator
+    >>> e3 = x <  1
+                ^
