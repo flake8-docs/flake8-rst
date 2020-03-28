@@ -18,7 +18,7 @@ RST_RE = re.compile(
 
 DOCSTRING_RE = re.compile(
     r'(?P<before>\n?)'
-    r'^(?P<code>((?P<indent> *)\"{3}.*\n(?:(?:(?P=indent).+)?\n)*(?P=indent)\"{3}))',
+    r'^(?P<code>((?P<indent> *)r*\"{3}.*\n(?:(?:(?P=indent).+)?\n)*(?P=indent)\"{3}))',
     re.MULTILINE,
 )
 
