@@ -3,6 +3,7 @@ import optparse
 from flake8.checker import FileChecker, Manager, LOG
 from flake8.processor import FileProcessor
 from flake8.style_guide import DecisionEngine
+from flake8 import exceptions
 
 from .rst import find_sourcecode
 
@@ -27,6 +28,7 @@ class RstManager(Manager):
                 checkers.append(checker)
 
         self.checkers = checkers
+        self._all_checkers = checkers
 
         LOG.info('Checking %d blocks', len(self.checkers))
 
@@ -74,8 +76,25 @@ class RstFileChecker(FileChecker):
             if line['lineno'] == 0:
                 return error_code
 
-            return super(RstFileChecker, self).report(error_code, line['lineno'], column + line['indent'],
-                                                      text, line=line['raw_source'])
+            if error_code is None:
+                error_code, text = text.split(" ", 1)
+
+            # If we're recovering from a problem in _make_processor, we will not
+            # have this attribute.
+            if hasattr(self, "processor"):
+                try:
+                    self.processor.file_tokens
+                    source = self.processor.noqa_line_for(line_number)
+                except exceptions.InvalidSyntax:
+                    source = line['source']
+            else:
+                source = None
+
+            if source:
+                source = line['raw_source'][:line['indent']] + source
+
+            self.results.append((error_code, line['lineno'], column + line['indent'], text, source))
+            return error_code
         except IndexError:
             return error_code
 

@@ -8,7 +8,8 @@ from flake8_rst.sourceblock import SourceBlock
 @pytest.fixture()
 def options(mocker):
     return mocker.Mock(max_line_length=80, verbose=0, hang_closing=False, max_doc_length=100,
-                       ignore=[], bootstrap=None, default_groupnames='*.rst->*: default')
+                       ignore=[], bootstrap=None, default_groupnames='*.rst->*: default',
+                       disable_noqa=False)
 
 
 @pytest.fixture()
