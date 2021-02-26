@@ -3,10 +3,7 @@ from __future__ import unicode_literals
 import ast
 import sys
 
-try:
-    import pathlib
-except ImportError:
-    import pathlib2 as pathlib
+import pathlib
 import pprint
 
 import pytest

@@ -6,21 +6,13 @@ import operator
 import re
 
 try:
-    if sys.version_info > (3, 5):
-        import IPython.core.inputtransformer2 as ipt
+    import IPython.core.inputtransformer2 as ipt
 
-        transform_manager = ipt.TransformerManager()
-        transform_manager.cleanup_transforms.clear()
-        transform_cell = transform_manager.transform_cell
-        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.run_line_magic\('(?:time(?:it)?)', (?P<x>(['\"]))(.*)(?P=x)\)",
-                                  re.MULTILINE)
-    else:
-        from IPython.core import inputsplitter as ipt
-
-        transformer = ipt.IPythonInputSplitter()
-        transform_cell = transformer.transform_cell
-        RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.magic\(u(?P<x>(['\"]))(?:time(?:it)?) (.*)(?P=x)\)",
-                                  re.MULTILINE)
+    transform_manager = ipt.TransformerManager()
+    transform_manager.cleanup_transforms.clear()
+    transform_cell = transform_manager.transform_cell
+    RUN_MAGIC_RE = re.compile(r"get_ipython\(\)\.run_line_magic\('(?:time(?:it)?)', (?P<x>(['\"]))(.*)(?P=x)\)",
+                                re.MULTILINE)
 except ImportError:
     ipt = transform_cell = None
 

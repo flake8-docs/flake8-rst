@@ -1,11 +1,7 @@
 import doctest
 import optparse
 import pytest
-
-try:
-    import pathlib
-except ImportError:
-    import pathlib2 as pathlib
+import pathlib
 
 from flake8_rst.rst import RST_RE, apply_default_groupnames, apply_directive_specific_options, merge_by_group
 from flake8_rst.sourceblock import SourceBlock, _extract_roles
@@ -15,7 +11,7 @@ from hypothesis import strategies as st
 ROOT_DIR = pathlib.Path(__file__).parent
 DATA_DIR = ROOT_DIR / 'data'
 
-code_strategy = st.characters(blacklist_categories=['Cc'])
+code_strategy = st.characters(blacklist_categories=['Cc'], blacklist_characters=[':'])
 
 
 @given(code_strategy, code_strategy)

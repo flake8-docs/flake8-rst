@@ -12,13 +12,13 @@ language: python
 
 matrix:
   include:
-  - python: '2.7'
+  - python: '3.6'
     env: TOXENV="py27-linux"
 
-  - python: '3.6'
+  - python: '3.8'
     env: TOXENV="py36-linux"
 
-  - python: '3.6'
+  - python: '3.8'
     env: TOXENV="check"
 
 install: pip install tox
